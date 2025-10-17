@@ -1,15 +1,30 @@
-click
-fastapi
-uvicorn[standard]
-SQLAlchemy
-psycopg2-binary
-PyMySQL
-python-multipart
-websockets
-sse-starlette
-rich
-textual
-openai>=1.0.0
-anthropic>=0.7.0
-tiktoken>=0.5.0
-sqlparse>=0.4.0
+# Core Web Framework
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.18
+
+# Database
+SQLAlchemy==2.0.36
+psycopg2-binary==2.9.10
+PyMySQL==1.1.1
+
+# Real-time Communication
+websockets==14.1
+sse-starlette==2.2.1
+
+# CLI & UI
+click==8.1.8
+rich==13.9.4
+textual==0.90.1
+
+# AI Providers
+openai==1.58.1
+anthropic==0.42.0
+tiktoken==0.8.0
+
+# SQL Parsing
+sqlparse==0.5.3
+
+# Security & Validation
+pydantic==2.10.3
+pydantic-settings==2.7.0
