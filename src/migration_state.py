@@ -1,4 +1,3 @@
-
 from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Dict, Any
@@ -14,6 +13,7 @@ from .migration_loader import scan_migration_files, MigrationFile
 @dataclass
 class AppliedMigration:
     """Represents a migration that has been applied to the database."""
+
     version: str
     description: str
     applied_at: datetime
@@ -25,11 +25,11 @@ class AppliedMigration:
 
     @property
     def is_successful(self) -> bool:
-        return self.status == 'success'
+        return self.status == "success"
 
     @property
     def is_failed(self) -> bool:
-        return self.status == 'failed'
+        return self.status == "failed"
 
     def __lt__(self, other):
         """Enable sorting by version."""
@@ -39,6 +39,7 @@ class AppliedMigration:
 @dataclass
 class PendingMigration:
     """Represents a migration file that hasn't been applied yet."""
+
     version: str
     description: str
     file_path: str
@@ -53,6 +54,7 @@ class PendingMigration:
 @dataclass
 class MigrationStateReport:
     """Comprehensive report of migration state."""
+
     applied_count: int
     pending_count: int
     failed_count: int
@@ -89,9 +91,9 @@ def table_exists(engine) -> bool:
     """Check if schema_migrations table exists."""
     try:
         with engine.connect() as conn:
-            result = conn.execute(text(
-                f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{SCHEMA_TABLE_NAME}')"
-            ))
+            result = conn.execute(
+                text(f"SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = '{SCHEMA_TABLE_NAME}')")
+            )
             return result.scalar()
     except Exception:
         return False
@@ -117,16 +119,18 @@ def get_applied_migrations() -> List[AppliedMigration]:
 
             migrations = []
             for row in result:
-                migrations.append(AppliedMigration(
-                    version=row.version,
-                    description=row.description,
-                    applied_at=row.applied_at,
-                    checksum=row.checksum,
-                    status=row.status,
-                    execution_time=row.execution_time,
-                    error_message=row.error_message,
-                    rollback_sql=row.rollback_sql
-                ))
+                migrations.append(
+                    AppliedMigration(
+                        version=row.version,
+                        description=row.description,
+                        applied_at=row.applied_at,
+                        checksum=row.checksum,
+                        status=row.status,
+                        execution_time=row.execution_time,
+                        error_message=row.error_message,
+                        rollback_sql=row.rollback_sql,
+                    )
+                )
 
             return migrations
 
@@ -153,13 +157,15 @@ def get_pending_migrations() -> List[PendingMigration]:
     pending = []
     for file in all_files:
         if file.version not in applied_versions:
-            pending.append(PendingMigration(
-                version=file.version,
-                description=file.description,
-                file_path=str(file.file_path),
-                checksum=file.checksum,
-                file_type=file.file_type
-            ))
+            pending.append(
+                PendingMigration(
+                    version=file.version,
+                    description=file.description,
+                    file_path=str(file.file_path),
+                    checksum=file.checksum,
+                    file_type=file.file_type,
+                )
+            )
 
     pending.sort()
     return pending
@@ -195,13 +201,15 @@ def get_checksum_mismatches() -> List[Dict[str, str]]:
         if file.version in applied_dict:
             applied_migration = applied_dict[file.version]
             if file.checksum != applied_migration.checksum:
-                mismatches.append({
-                    'version': file.version,
-                    'description': file.description,
-                    'file_checksum': file.checksum,
-                    'db_checksum': applied_migration.checksum,
-                    'file_path': str(file.file_path)
-                })
+                mismatches.append(
+                    {
+                        "version": file.version,
+                        "description": file.description,
+                        "file_checksum": file.checksum,
+                        "db_checksum": applied_migration.checksum,
+                        "file_path": str(file.file_path),
+                    }
+                )
 
     return mismatches
 
@@ -255,7 +263,7 @@ def get_migration_state_report() -> MigrationStateReport:
         applied_migrations=applied,
         pending_migrations=pending,
         checksum_mismatches=mismatches,
-        orphaned_migrations=orphaned
+        orphaned_migrations=orphaned,
     )
 
 
@@ -276,8 +284,9 @@ def get_migration_by_version(version: str) -> Optional[AppliedMigration]:
     return None
 
 
-def record_migration_success(version: str, description: str, checksum: str,
-                             execution_time: float, rollback_sql: Optional[str] = None):
+def record_migration_success(
+    version: str, description: str, checksum: str, execution_time: float, rollback_sql: Optional[str] = None
+):
     """
     Record a successful migration application.
 
@@ -297,10 +306,10 @@ def record_migration_success(version: str, description: str, checksum: str,
                 description=description,
                 applied_at=datetime.utcnow(),
                 checksum=checksum,
-                status='success',
+                status="success",
                 execution_time=execution_time,
                 error_message=None,
-                rollback_sql=rollback_sql
+                rollback_sql=rollback_sql,
             )
             conn.execute(stmt)
 
@@ -309,8 +318,7 @@ def record_migration_success(version: str, description: str, checksum: str,
         raise
 
 
-def record_migration_failure(version: str, description: str, checksum: str,
-                             execution_time: float, error_message: str):
+def record_migration_failure(version: str, description: str, checksum: str, execution_time: float, error_message: str):
     """
     Record a failed migration attempt.
 
@@ -330,10 +338,10 @@ def record_migration_failure(version: str, description: str, checksum: str,
                 description=description,
                 applied_at=datetime.utcnow(),
                 checksum=checksum,
-                status='failed',
+                status="failed",
                 execution_time=execution_time,
                 error_message=error_message,
-                rollback_sql=None
+                rollback_sql=None,
             )
             conn.execute(stmt)
 
@@ -354,9 +362,7 @@ def delete_migration_record(version: str):
 
     try:
         with engine.begin() as conn:
-            stmt = schema_migrations_table.delete().where(
-                schema_migrations_table.c.version == version
-            )
+            stmt = schema_migrations_table.delete().where(schema_migrations_table.c.version == version)
             conn.execute(stmt)
 
     except SQLAlchemyError as e:

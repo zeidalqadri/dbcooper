@@ -1,9 +1,9 @@
-
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from .config import get_database_uri
 
 _engine = None
+
 
 def get_engine() -> Engine:
     """Returns a SQLAlchemy engine instance."""
@@ -16,6 +16,7 @@ def get_engine() -> Engine:
             print(f"Error creating database engine: {e}")
             raise
     return _engine
+
 
 def check_connection():
     """Checks if a connection to the database can be established."""

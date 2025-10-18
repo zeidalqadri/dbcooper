@@ -12,7 +12,7 @@ from src.migration_executor import (
     MigrationExecutor,
     MigrationExecutionError,
     apply_pending_migrations,
-    rollback_migrations
+    rollback_migrations,
 )
 from src.migration_loader import MigrationFile
 
@@ -20,7 +20,7 @@ from src.migration_loader import MigrationFile
 @pytest.fixture
 def executor():
     """Create a MigrationExecutor instance for testing."""
-    with patch('src.migration_executor.get_engine'):
+    with patch("src.migration_executor.get_engine"):
         return MigrationExecutor(dry_run=False, verbose=True)
 
 
@@ -33,7 +33,7 @@ def sample_sql_migration():
         file_path=Path("/tmp/20250101000000_test.sql"),
         checksum="abc123",
         content="CREATE TABLE test_table (id INT PRIMARY KEY);",
-        file_type="sql"
+        file_type="sql",
     )
 
 
@@ -46,7 +46,7 @@ def sample_python_migration():
         file_path=Path("/tmp/20250101000001_test.py"),
         checksum="def456",
         content="def up(conn):\n    pass\n",
-        file_type="py"
+        file_type="py",
     )
 
 
@@ -55,7 +55,7 @@ class TestMigrationExecutor:
 
     def test_initialization(self):
         """Test MigrationExecutor initialization."""
-        with patch('src.migration_executor.get_engine') as mock_engine:
+        with patch("src.migration_executor.get_engine") as mock_engine:
             executor = MigrationExecutor(dry_run=True, verbose=False)
             assert executor.dry_run is True
             assert executor.verbose is False
@@ -136,8 +136,8 @@ class TestMigrationExecutor:
         executor.engine.begin.return_value.__enter__ = Mock(return_value=mock_conn)
         executor.engine.begin.return_value.__exit__ = Mock(return_value=False)
 
-        with patch('src.migration_executor.record_migration_success'):
-            with patch.object(executor, '_execute_sql_migration', return_value=None):
+        with patch("src.migration_executor.record_migration_success"):
+            with patch.object(executor, "_execute_sql_migration", return_value=None):
                 result = executor.apply_migration(sample_sql_migration)
                 assert result is True
 
@@ -150,18 +150,19 @@ class TestMigrationExecutor:
         executor.engine.begin.return_value.__enter__ = Mock(return_value=mock_conn)
         executor.engine.begin.return_value.__exit__ = Mock(return_value=False)
 
-        with patch('src.migration_executor.record_migration_failure'):
+        with patch("src.migration_executor.record_migration_failure"):
             result = executor.apply_migration(sample_sql_migration)
             # Should return False on error
             assert result is False or result is None
 
-    @pytest.mark.parametrize("file_type,expected_method", [
-        ("sql", "_execute_sql_migration"),
-        ("py", "_execute_python_migration"),
-    ])
-    def test_apply_migration_delegates_to_correct_method(
-        self, executor, file_type, expected_method
-    ):
+    @pytest.mark.parametrize(
+        "file_type,expected_method",
+        [
+            ("sql", "_execute_sql_migration"),
+            ("py", "_execute_python_migration"),
+        ],
+    )
+    def test_apply_migration_delegates_to_correct_method(self, executor, file_type, expected_method):
         """Test that apply_migration delegates to correct execution method."""
         migration = MigrationFile(
             version="20250101000000",
@@ -169,7 +170,7 @@ class TestMigrationExecutor:
             file_path=Path(f"/tmp/test.{file_type}"),
             checksum="abc",
             content="test",
-            file_type=file_type
+            file_type=file_type,
         )
 
         mock_conn = Mock()
@@ -177,7 +178,7 @@ class TestMigrationExecutor:
         executor.engine.begin.return_value.__enter__ = Mock(return_value=mock_conn)
         executor.engine.begin.return_value.__exit__ = Mock(return_value=False)
 
-        with patch('src.migration_executor.record_migration_success'):
+        with patch("src.migration_executor.record_migration_success"):
             with patch.object(executor, expected_method, return_value=None) as mock_method:
                 executor.apply_migration(migration)
                 mock_method.assert_called_once()
@@ -186,8 +187,8 @@ class TestMigrationExecutor:
 class TestApplyPendingMigrations:
     """Test apply_pending_migrations function."""
 
-    @patch('src.migration_executor.get_pending_migrations')
-    @patch('src.migration_executor.MigrationExecutor')
+    @patch("src.migration_executor.get_pending_migrations")
+    @patch("src.migration_executor.MigrationExecutor")
     def test_apply_pending_migrations_success(self, mock_executor_class, mock_get_pending):
         """Test successful application of pending migrations."""
         # Setup mocks
@@ -209,11 +210,9 @@ class TestApplyPendingMigrations:
         assert result["failed"] == 0
         assert len(result["errors"]) == 0
 
-    @patch('src.migration_executor.get_pending_migrations')
-    @patch('src.migration_executor.MigrationExecutor')
-    def test_apply_pending_migrations_with_failures(
-        self, mock_executor_class, mock_get_pending
-    ):
+    @patch("src.migration_executor.get_pending_migrations")
+    @patch("src.migration_executor.MigrationExecutor")
+    def test_apply_pending_migrations_with_failures(self, mock_executor_class, mock_get_pending):
         """Test application of pending migrations with some failures."""
         mock_pending = [
             Mock(version="001", description="Test 1"),
@@ -230,7 +229,7 @@ class TestApplyPendingMigrations:
         assert result["successful"] == 1
         assert result["failed"] == 1
 
-    @patch('src.migration_executor.get_pending_migrations')
+    @patch("src.migration_executor.get_pending_migrations")
     def test_apply_pending_migrations_no_pending(self, mock_get_pending):
         """Test when there are no pending migrations."""
         mock_get_pending.return_value = []
@@ -245,12 +244,10 @@ class TestApplyPendingMigrations:
 class TestRollbackMigrations:
     """Test rollback_migrations function."""
 
-    @patch('src.migration_executor.get_applied_migrations')
-    @patch('src.migration_executor.get_migration_by_version')
-    @patch('src.migration_executor.delete_migration_record')
-    def test_rollback_single_migration(
-        self, mock_delete, mock_get_by_version, mock_get_applied
-    ):
+    @patch("src.migration_executor.get_applied_migrations")
+    @patch("src.migration_executor.get_migration_by_version")
+    @patch("src.migration_executor.delete_migration_record")
+    def test_rollback_single_migration(self, mock_delete, mock_get_by_version, mock_get_applied):
         """Test rolling back a single migration."""
         mock_applied = [Mock(version="001", description="Test")]
         mock_get_applied.return_value = mock_applied
@@ -259,13 +256,13 @@ class TestRollbackMigrations:
         mock_migration.content = "DROP TABLE test_table;"
         mock_get_by_version.return_value = mock_migration
 
-        with patch('src.migration_executor.get_engine'):
+        with patch("src.migration_executor.get_engine"):
             result = rollback_migrations(count=1, dry_run=False, verbose=False)
 
             # Should have attempted rollback
             assert result is not None
 
-    @patch('src.migration_executor.get_applied_migrations')
+    @patch("src.migration_executor.get_applied_migrations")
     def test_rollback_no_migrations(self, mock_get_applied):
         """Test rollback when no migrations are applied."""
         mock_get_applied.return_value = []
@@ -275,7 +272,7 @@ class TestRollbackMigrations:
         assert result["successful"] == 0
         assert "No applied migrations" in result["message"]
 
-    @patch('src.migration_executor.get_applied_migrations')
+    @patch("src.migration_executor.get_applied_migrations")
     def test_rollback_more_than_available(self, mock_get_applied):
         """Test rollback when requesting more rollbacks than available."""
         mock_applied = [Mock(version="001")]
@@ -293,7 +290,7 @@ class TestMigrationExecutorIntegration:
 
     def test_execute_migration_with_real_db(self, test_db_engine):
         """Test migration execution with a real database engine."""
-        with patch('src.migration_executor.get_engine', return_value=test_db_engine):
+        with patch("src.migration_executor.get_engine", return_value=test_db_engine):
             executor = MigrationExecutor(dry_run=False, verbose=True)
 
             migration = MigrationFile(
@@ -302,18 +299,18 @@ class TestMigrationExecutorIntegration:
                 file_path=Path("/tmp/test.sql"),
                 checksum="abc123",
                 content="CREATE TABLE integration_test (id INTEGER PRIMARY KEY);",
-                file_type="sql"
+                file_type="sql",
             )
 
             # Apply migration
-            with patch('src.migration_executor.record_migration_success'):
-                with patch('src.migration_executor.record_migration_failure'):
+            with patch("src.migration_executor.record_migration_success"):
+                with patch("src.migration_executor.record_migration_failure"):
                     result = executor.apply_migration(migration)
 
             # Verify table was created
             with test_db_engine.connect() as conn:
-                result = conn.execute(text(
-                    "SELECT name FROM sqlite_master WHERE type='table' AND name='integration_test'"
-                ))
+                result = conn.execute(
+                    text("SELECT name FROM sqlite_master WHERE type='table' AND name='integration_test'")
+                )
                 tables = result.fetchall()
                 assert len(tables) == 1

@@ -1,4 +1,3 @@
-
 import click
 import sys
 from datetime import datetime
@@ -12,7 +11,7 @@ from .ai_generator import generate_migration_with_ai, get_ai_generator
 
 
 @click.group()
-@click.option('--verbose', '-v', is_flag=True, help='Enable verbose output')
+@click.option("--verbose", "-v", is_flag=True, help="Enable verbose output")
 @click.pass_context
 def cli(ctx, verbose):
     """
@@ -22,14 +21,14 @@ def cli(ctx, verbose):
     strict compliance enforcement and automated validation.
     """
     ctx.ensure_object(dict)
-    ctx.obj['verbose'] = verbose
+    ctx.obj["verbose"] = verbose
 
 
 @cli.command()
 @click.pass_context
 def init(ctx):
     """Initialize the database with migration tracking tables."""
-    verbose = ctx.obj.get('verbose', False)
+    verbose = ctx.obj.get("verbose", False)
     click.echo("Initializing database...")
 
     try:
@@ -43,7 +42,7 @@ def init(ctx):
             from .migration_loader import get_migration_by_version
 
             # Load and execute the trigger setup migration
-            trigger_migration = get_migration_by_version('00000000000000')
+            trigger_migration = get_migration_by_version("00000000000000")
             if trigger_migration:
                 executor = MigrationExecutor(verbose=verbose)
                 success, exec_time, error = executor.execute_migration(trigger_migration)
@@ -73,9 +72,9 @@ def connect_test():
 
 
 @cli.command()
-@click.argument('description')
-@click.option('--sql', 'file_type', flag_value='sql', default=True, help='Create SQL migration (default)')
-@click.option('--py', 'file_type', flag_value='py', help='Create Python migration')
+@click.argument("description")
+@click.option("--sql", "file_type", flag_value="sql", default=True, help="Create SQL migration (default)")
+@click.option("--py", "file_type", flag_value="py", help="Create Python migration")
 def create(description, file_type):
     """
     Create a new migration file with timestamp.
@@ -93,11 +92,11 @@ def create(description, file_type):
 
 
 @cli.command()
-@click.argument('prompt', required=False)
-@click.option('--sql', 'file_type', flag_value='sql', default=True, help='Generate SQL migration (default)')
-@click.option('--py', 'file_type', flag_value='py', help='Generate Python migration')
-@click.option('--no-context', is_flag=True, help='Skip database schema context')
-@click.option('--apply', 'auto_apply', is_flag=True, help='Automatically apply after generation')
+@click.argument("prompt", required=False)
+@click.option("--sql", "file_type", flag_value="sql", default=True, help="Generate SQL migration (default)")
+@click.option("--py", "file_type", flag_value="py", help="Generate Python migration")
+@click.option("--no-context", is_flag=True, help="Skip database schema context")
+@click.option("--apply", "auto_apply", is_flag=True, help="Automatically apply after generation")
 @click.pass_context
 def generate(ctx, prompt, file_type, no_context, auto_apply):
     """
@@ -110,7 +109,7 @@ def generate(ctx, prompt, file_type, no_context, auto_apply):
       python -m src.cli generate "Create posts table with user relationship"
       python -m src.cli generate --apply "Add index on users.email"
     """
-    verbose = ctx.obj.get('verbose', False)
+    verbose = ctx.obj.get("verbose", False)
 
     try:
         # Check if AI is available
@@ -137,11 +136,7 @@ def generate(ctx, prompt, file_type, no_context, auto_apply):
         click.echo(f"\nGenerating migration with AI... ", nl=False)
 
         # Generate migration
-        result = generate_migration_with_ai(
-            prompt=prompt,
-            file_type=file_type,
-            include_context=not no_context
-        )
+        result = generate_migration_with_ai(prompt=prompt, file_type=file_type, include_context=not no_context)
 
         click.echo("✓")
 
@@ -181,9 +176,7 @@ def generate(ctx, prompt, file_type, no_context, auto_apply):
         if result.confidence > 0.0:
             if auto_apply or click.confirm("\nSave this migration?"):
                 file_path = create_migration_file(
-                    description=result.description,
-                    content=result.sql,
-                    file_type=file_type
+                    description=result.description, content=result.sql, file_type=file_type
                 )
                 click.echo(f"\n✓ Saved: {file_path.name}")
                 click.echo(f"  Path: {file_path}")
@@ -202,6 +195,7 @@ def generate(ctx, prompt, file_type, no_context, auto_apply):
         click.echo(f"\n✗ Error: {e}", err=True)
         if verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 
@@ -210,7 +204,7 @@ def generate(ctx, prompt, file_type, no_context, auto_apply):
 @click.pass_context
 def status(ctx):
     """Show current migration status and compliance state."""
-    verbose = ctx.obj.get('verbose', False)
+    verbose = ctx.obj.get("verbose", False)
 
     try:
         state_report = get_migration_state_report()
@@ -264,11 +258,11 @@ def status(ctx):
 
 
 @cli.command()
-@click.option('--dry-run', is_flag=True, help='Validate without executing')
+@click.option("--dry-run", is_flag=True, help="Validate without executing")
 @click.pass_context
 def apply(ctx, dry_run):
     """Apply all pending migrations sequentially."""
-    verbose = ctx.obj.get('verbose', False)
+    verbose = ctx.obj.get("verbose", False)
 
     if dry_run:
         click.echo("DRY RUN MODE - No changes will be made")
@@ -297,8 +291,8 @@ def apply(ctx, dry_run):
 
 
 @cli.command()
-@click.argument('count', type=int, default=1)
-@click.option('--dry-run', is_flag=True, help='Validate without executing')
+@click.argument("count", type=int, default=1)
+@click.option("--dry-run", is_flag=True, help="Validate without executing")
 @click.pass_context
 def rollback(ctx, count, dry_run):
     """
@@ -306,7 +300,7 @@ def rollback(ctx, count, dry_run):
 
     COUNT: Number of migrations to rollback (default: 1)
     """
-    verbose = ctx.obj.get('verbose', False)
+    verbose = ctx.obj.get("verbose", False)
 
     if dry_run:
         click.echo("DRY RUN MODE - No changes will be made")
@@ -354,7 +348,7 @@ def validate():
 
 
 @cli.command()
-@click.option('--limit', '-n', type=int, default=20, help='Number of migrations to show')
+@click.option("--limit", "-n", type=int, default=20, help="Number of migrations to show")
 def history(limit):
     """Show migration history."""
     try:
@@ -452,8 +446,8 @@ def list():
 
 
 @cli.command()
-@click.option('--enable', is_flag=True, help='Enable schema interception')
-@click.option('--disable', is_flag=True, help='Disable schema interception')
+@click.option("--enable", is_flag=True, help="Enable schema interception")
+@click.option("--disable", is_flag=True, help="Disable schema interception")
 def interceptor(enable, disable):
     """Manage the schema modification interceptor."""
     if enable and disable:

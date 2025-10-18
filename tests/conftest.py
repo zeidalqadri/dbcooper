@@ -21,6 +21,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 # Environment Setup
 # ============================================================================
 
+
 @pytest.fixture(scope="session", autouse=True)
 def setup_test_environment():
     """Set up test environment variables."""
@@ -37,6 +38,7 @@ def setup_test_environment():
 # Database Fixtures
 # ============================================================================
 
+
 @pytest.fixture(scope="function")
 def test_db_engine() -> Generator[Engine, None, None]:
     """Create a test database engine with SQLite in-memory."""
@@ -44,7 +46,9 @@ def test_db_engine() -> Generator[Engine, None, None]:
 
     # Create schema_migrations table
     with engine.connect() as conn:
-        conn.execute(text("""
+        conn.execute(
+            text(
+                """
             CREATE TABLE IF NOT EXISTS schema_migrations (
                 version VARCHAR(255) PRIMARY KEY,
                 description TEXT,
@@ -54,7 +58,9 @@ def test_db_engine() -> Generator[Engine, None, None]:
                 status VARCHAR(50) DEFAULT 'success',
                 error_message TEXT
             )
-        """))
+        """
+            )
+        )
         conn.commit()
 
     yield engine
@@ -82,6 +88,7 @@ def mock_db_engine():
 # ============================================================================
 # Migration Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def sample_migration_sql() -> str:
@@ -137,6 +144,7 @@ def mock_migrations_dir(tmp_path: Path) -> Path:
 # AI Provider Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def mock_openai_client():
     """Mock OpenAI client."""
@@ -146,16 +154,8 @@ def mock_openai_client():
 
         # Mock completion response
         client.chat.completions.create.return_value = Mock(
-            choices=[Mock(
-                message=Mock(
-                    content="CREATE TABLE test (id INT);"
-                )
-            )],
-            usage=Mock(
-                prompt_tokens=100,
-                completion_tokens=50,
-                total_tokens=150
-            )
+            choices=[Mock(message=Mock(content="CREATE TABLE test (id INT);"))],
+            usage=Mock(prompt_tokens=100, completion_tokens=50, total_tokens=150),
         )
 
         yield client
@@ -170,11 +170,7 @@ def mock_anthropic_client():
 
         # Mock message response
         client.messages.create.return_value = Mock(
-            content=[Mock(text="CREATE TABLE test (id INT);")],
-            usage=Mock(
-                input_tokens=100,
-                output_tokens=50
-            )
+            content=[Mock(text="CREATE TABLE test (id INT);")], usage=Mock(input_tokens=100, output_tokens=50)
         )
 
         yield client
@@ -184,10 +180,12 @@ def mock_anthropic_client():
 # API Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def mock_fastapi_app():
     """Mock FastAPI application for testing."""
     from fastapi import FastAPI
+
     app = FastAPI()
     return app
 
@@ -195,6 +193,7 @@ def mock_fastapi_app():
 # ============================================================================
 # Compliance Fixtures
 # ============================================================================
+
 
 @pytest.fixture
 def sample_destructive_sql() -> str:
@@ -223,6 +222,7 @@ CREATE INDEX idx_users_age ON users(age);
 # Helper Fixtures
 # ============================================================================
 
+
 @pytest.fixture
 def mock_config():
     """Mock configuration values."""
@@ -242,5 +242,6 @@ def mock_config():
 def capture_logs(caplog):
     """Fixture to capture log messages."""
     import logging
+
     caplog.set_level(logging.INFO)
     return caplog

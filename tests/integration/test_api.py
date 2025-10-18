@@ -12,8 +12,9 @@ from datetime import datetime
 def test_client():
     """Create a test client for the FastAPI application."""
     # Import here to avoid circular imports
-    with patch('src.api.get_engine'):
+    with patch("src.api.get_engine"):
         from src.api import app
+
         return TestClient(app)
 
 
@@ -29,7 +30,7 @@ def mock_migration_state():
         last_applied_version="20250101000000",
         last_applied_timestamp=datetime.now(),
         checksum_mismatches=[],
-        is_clean=True
+        is_clean=True,
     )
 
 
@@ -37,7 +38,7 @@ def mock_migration_state():
 class TestHealthEndpoint:
     """Test /health endpoint."""
 
-    @patch('src.api.check_connection')
+    @patch("src.api.check_connection")
     def test_health_endpoint_success(self, mock_check, test_client):
         """Test health endpoint returns success when DB is connected."""
         mock_check.return_value = True
@@ -49,7 +50,7 @@ class TestHealthEndpoint:
         assert data["status"] == "healthy"
         assert data["database_connected"] is True
 
-    @patch('src.api.check_connection')
+    @patch("src.api.check_connection")
     def test_health_endpoint_db_down(self, mock_check, test_client):
         """Test health endpoint when database is down."""
         mock_check.return_value = False
@@ -65,7 +66,7 @@ class TestHealthEndpoint:
 class TestMigrationStatusEndpoint:
     """Test /api/migrations/status endpoint."""
 
-    @patch('src.api.get_migration_state_report')
+    @patch("src.api.get_migration_state_report")
     def test_migration_status_success(self, mock_state, test_client, mock_migration_state):
         """Test getting migration status."""
         mock_state.return_value = mock_migration_state
@@ -84,7 +85,7 @@ class TestMigrationStatusEndpoint:
 class TestAppliedMigrationsEndpoint:
     """Test /api/migrations/applied endpoint."""
 
-    @patch('src.api.get_applied_migrations')
+    @patch("src.api.get_applied_migrations")
     def test_get_applied_migrations(self, mock_get_applied, test_client):
         """Test getting list of applied migrations."""
         from src.migration_state import AppliedMigration
@@ -97,7 +98,7 @@ class TestAppliedMigrationsEndpoint:
                 checksum="abc123",
                 status="success",
                 execution_time=0.5,
-                error_message=None
+                error_message=None,
             )
         ]
         mock_get_applied.return_value = mock_migrations
@@ -115,7 +116,7 @@ class TestAppliedMigrationsEndpoint:
 class TestPendingMigrationsEndpoint:
     """Test /api/migrations/pending endpoint."""
 
-    @patch('src.api.get_pending_migrations')
+    @patch("src.api.get_pending_migrations")
     def test_get_pending_migrations(self, mock_get_pending, test_client):
         """Test getting list of pending migrations."""
         from src.migration_state import PendingMigration
@@ -126,7 +127,7 @@ class TestPendingMigrationsEndpoint:
                 description="Add users table",
                 file_path="/path/to/migration.sql",
                 checksum="def456",
-                file_type="sql"
+                file_type="sql",
             )
         ]
         mock_get_pending.return_value = mock_migrations
@@ -144,40 +145,34 @@ class TestPendingMigrationsEndpoint:
 class TestApplyMigrationsEndpoint:
     """Test /api/migrations/apply endpoint."""
 
-    @patch('src.api.apply_pending_migrations')
+    @patch("src.api.apply_pending_migrations")
     def test_apply_migrations_success(self, mock_apply, test_client):
         """Test applying migrations successfully."""
         mock_apply.return_value = {
             "successful": 2,
             "failed": 0,
             "errors": [],
-            "message": "Successfully applied 2 migrations"
+            "message": "Successfully applied 2 migrations",
         }
 
-        response = test_client.post(
-            "/api/migrations/apply",
-            json={"dry_run": False, "verbose": False}
-        )
+        response = test_client.post("/api/migrations/apply", json={"dry_run": False, "verbose": False})
 
         assert response.status_code == 200
         data = response.json()
         assert data["successful"] == 2
         assert data["failed"] == 0
 
-    @patch('src.api.apply_pending_migrations')
+    @patch("src.api.apply_pending_migrations")
     def test_apply_migrations_with_failures(self, mock_apply, test_client):
         """Test applying migrations with some failures."""
         mock_apply.return_value = {
             "successful": 1,
             "failed": 1,
             "errors": ["Migration 002 failed"],
-            "message": "Applied 1/2 migrations"
+            "message": "Applied 1/2 migrations",
         }
 
-        response = test_client.post(
-            "/api/migrations/apply",
-            json={"dry_run": False, "verbose": True}
-        )
+        response = test_client.post("/api/migrations/apply", json={"dry_run": False, "verbose": True})
 
         assert response.status_code == 200
         data = response.json()
@@ -185,20 +180,17 @@ class TestApplyMigrationsEndpoint:
         assert data["failed"] == 1
         assert len(data["errors"]) == 1
 
-    @patch('src.api.apply_pending_migrations')
+    @patch("src.api.apply_pending_migrations")
     def test_apply_migrations_dry_run(self, mock_apply, test_client):
         """Test applying migrations in dry-run mode."""
         mock_apply.return_value = {
             "successful": 0,
             "failed": 0,
             "errors": [],
-            "message": "Dry run: would apply 2 migrations"
+            "message": "Dry run: would apply 2 migrations",
         }
 
-        response = test_client.post(
-            "/api/migrations/apply",
-            json={"dry_run": True, "verbose": False}
-        )
+        response = test_client.post("/api/migrations/apply", json={"dry_run": True, "verbose": False})
 
         assert response.status_code == 200
         data = response.json()
@@ -209,32 +201,26 @@ class TestApplyMigrationsEndpoint:
 class TestRollbackEndpoint:
     """Test /api/migrations/rollback endpoint."""
 
-    @patch('src.api.rollback_migrations')
+    @patch("src.api.rollback_migrations")
     def test_rollback_success(self, mock_rollback, test_client):
         """Test rolling back migrations."""
         mock_rollback.return_value = {
             "successful": 1,
             "failed": 0,
             "errors": [],
-            "message": "Successfully rolled back 1 migration"
+            "message": "Successfully rolled back 1 migration",
         }
 
-        response = test_client.post(
-            "/api/migrations/rollback",
-            json={"count": 1, "dry_run": False}
-        )
+        response = test_client.post("/api/migrations/rollback", json={"count": 1, "dry_run": False})
 
         assert response.status_code == 200
         data = response.json()
         assert data["successful"] == 1
 
-    @patch('src.api.rollback_migrations')
+    @patch("src.api.rollback_migrations")
     def test_rollback_validation_error(self, mock_rollback, test_client):
         """Test rollback with invalid count."""
-        response = test_client.post(
-            "/api/migrations/rollback",
-            json={"count": 0, "dry_run": False}
-        )
+        response = test_client.post("/api/migrations/rollback", json={"count": 0, "dry_run": False})
 
         # Should fail validation (count must be >= 1)
         assert response.status_code == 422
@@ -244,7 +230,7 @@ class TestRollbackEndpoint:
 class TestComplianceEndpoint:
     """Test /api/compliance/check endpoint."""
 
-    @patch('src.api.check_compliance')
+    @patch("src.api.check_compliance")
     def test_compliance_check_compliant(self, mock_check, test_client):
         """Test compliance check when compliant."""
         from src.compliance_checker import ComplianceReport
@@ -255,7 +241,7 @@ class TestComplianceEndpoint:
             timestamp=datetime.now(),
             violations=[],
             state_report=Mock(spec=MigrationStateReport),
-            recommendations=[]
+            recommendations=[],
         )
         mock_check.return_value = mock_report
 
@@ -266,17 +252,14 @@ class TestComplianceEndpoint:
         assert data["is_compliant"] is True
         assert data["violation_count"] == 0
 
-    @patch('src.api.check_compliance')
+    @patch("src.api.check_compliance")
     def test_compliance_check_violations(self, mock_check, test_client):
         """Test compliance check with violations."""
         from src.compliance_checker import ComplianceReport, ComplianceViolation
         from src.migration_state import MigrationStateReport
 
         violation = ComplianceViolation(
-            severity="critical",
-            category="pending_migrations",
-            message="3 pending migrations",
-            details={"count": 3}
+            severity="critical", category="pending_migrations", message="3 pending migrations", details={"count": 3}
         )
 
         mock_report = ComplianceReport(
@@ -284,7 +267,7 @@ class TestComplianceEndpoint:
             timestamp=datetime.now(),
             violations=[violation],
             state_report=Mock(spec=MigrationStateReport),
-            recommendations=["Apply pending migrations"]
+            recommendations=["Apply pending migrations"],
         )
         mock_check.return_value = mock_report
 
@@ -301,7 +284,7 @@ class TestComplianceEndpoint:
 class TestCreateMigrationEndpoint:
     """Test /api/migrations/create endpoint."""
 
-    @patch('src.api.create_migration_file')
+    @patch("src.api.create_migration_file")
     def test_create_migration_success(self, mock_create, test_client):
         """Test creating a new migration."""
         from src.migration_loader import MigrationFile
@@ -312,13 +295,12 @@ class TestCreateMigrationEndpoint:
             file_path="/path/to/migration.sql",
             checksum="abc123",
             content="",
-            file_type="sql"
+            file_type="sql",
         )
         mock_create.return_value = mock_migration
 
         response = test_client.post(
-            "/api/migrations/create",
-            json={"description": "Add users table", "file_type": "sql"}
+            "/api/migrations/create", json={"description": "Add users table", "file_type": "sql"}
         )
 
         assert response.status_code == 201
@@ -328,20 +310,14 @@ class TestCreateMigrationEndpoint:
 
     def test_create_migration_invalid_input(self, test_client):
         """Test creating migration with invalid input."""
-        response = test_client.post(
-            "/api/migrations/create",
-            json={"description": "", "file_type": "sql"}
-        )
+        response = test_client.post("/api/migrations/create", json={"description": "", "file_type": "sql"})
 
         # Should fail validation (description too short)
         assert response.status_code == 422
 
     def test_create_migration_invalid_file_type(self, test_client):
         """Test creating migration with invalid file type."""
-        response = test_client.post(
-            "/api/migrations/create",
-            json={"description": "Test", "file_type": "txt"}
-        )
+        response = test_client.post("/api/migrations/create", json={"description": "Test", "file_type": "txt"})
 
         # Should fail validation (invalid file type)
         assert response.status_code == 422
@@ -351,7 +327,7 @@ class TestCreateMigrationEndpoint:
 class TestScanMigrationsEndpoint:
     """Test /api/migrations/scan endpoint."""
 
-    @patch('src.api.scan_migration_files')
+    @patch("src.api.scan_migration_files")
     def test_scan_migrations(self, mock_scan, test_client):
         """Test scanning migration files."""
         from src.migration_loader import MigrationFile
@@ -363,7 +339,7 @@ class TestScanMigrationsEndpoint:
                 file_path="/path/to/migration.sql",
                 checksum="abc",
                 content="",
-                file_type="sql"
+                file_type="sql",
             )
         ]
         mock_scan.return_value = mock_migrations
@@ -380,7 +356,7 @@ class TestScanMigrationsEndpoint:
 class TestAIGenerationEndpoint:
     """Test /api/ai/generate endpoint."""
 
-    @patch('src.api.generate_migration_with_ai')
+    @patch("src.api.generate_migration_with_ai")
     def test_ai_generate_migration_success(self, mock_generate, test_client):
         """Test AI migration generation."""
         from src.ai_providers import GeneratedMigration
@@ -391,17 +367,13 @@ class TestAIGenerationEndpoint:
             confidence=0.95,
             provider="openai",
             model="gpt-4",
-            tokens_used=150
+            tokens_used=150,
         )
         mock_generate.return_value = mock_result
 
         response = test_client.post(
             "/api/ai/generate",
-            json={
-                "prompt": "Create a users table",
-                "context": "PostgreSQL database",
-                "provider": "openai"
-            }
+            json={"prompt": "Create a users table", "context": "PostgreSQL database", "provider": "openai"},
         )
 
         assert response.status_code == 200
@@ -409,18 +381,12 @@ class TestAIGenerationEndpoint:
         assert data["success"] is True
         assert "sql_content" in data
 
-    @patch('src.api.generate_migration_with_ai')
+    @patch("src.api.generate_migration_with_ai")
     def test_ai_generate_migration_failure(self, mock_generate, test_client):
         """Test AI migration generation failure."""
         mock_generate.side_effect = Exception("AI service unavailable")
 
-        response = test_client.post(
-            "/api/ai/generate",
-            json={
-                "prompt": "Create a users table",
-                "provider": "openai"
-            }
-        )
+        response = test_client.post("/api/ai/generate", json={"prompt": "Create a users table", "provider": "openai"})
 
         assert response.status_code == 500
         data = response.json()
@@ -449,7 +415,7 @@ class TestErrorHandling:
         response = test_client.get("/api/nonexistent")
         assert response.status_code == 404
 
-    @patch('src.api.get_migration_state_report')
+    @patch("src.api.get_migration_state_report")
     def test_500_internal_error(self, mock_state, test_client):
         """Test 500 error handling."""
         mock_state.side_effect = Exception("Database connection failed")

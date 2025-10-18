@@ -1,20 +1,15 @@
-
 from dataclasses import dataclass
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 
-from .migration_state import (
-    get_migration_state_report,
-    MigrationStateReport,
-    get_applied_migrations,
-    table_exists
-)
+from .migration_state import get_migration_state_report, MigrationStateReport, get_applied_migrations, table_exists
 from .database import get_engine
 
 
 @dataclass
 class ComplianceViolation:
     """Represents a single compliance violation."""
+
     severity: str  # 'critical', 'high', 'medium', 'low'
     category: str  # 'pending_migrations', 'checksum_mismatch', 'failed_migration', etc.
     message: str
@@ -27,6 +22,7 @@ class ComplianceViolation:
 @dataclass
 class ComplianceReport:
     """Comprehensive compliance report with violations and recommendations."""
+
     is_compliant: bool
     timestamp: datetime
     violations: List[ComplianceViolation]
@@ -35,7 +31,7 @@ class ComplianceReport:
 
     @property
     def critical_violations(self) -> List[ComplianceViolation]:
-        return [v for v in self.violations if v.severity == 'critical']
+        return [v for v in self.violations if v.severity == "critical"]
 
     @property
     def has_critical_violations(self) -> bool:
@@ -90,6 +86,7 @@ class ComplianceChecker:
             self._log("WARNING: schema_migrations table does not exist!")
             # Return empty report
             from .migration_state import MigrationStateReport
+
             return MigrationStateReport(
                 applied_count=0,
                 pending_count=0,
@@ -99,15 +96,17 @@ class ComplianceChecker:
                 applied_migrations=[],
                 pending_migrations=[],
                 checksum_mismatches=[],
-                orphaned_migrations=[]
+                orphaned_migrations=[],
             )
 
         # Get comprehensive state report
         state_report = get_migration_state_report()
 
-        self._log(f"Audit complete: {state_report.applied_count} applied, "
-                 f"{state_report.pending_count} pending, "
-                 f"{state_report.failed_count} failed")
+        self._log(
+            f"Audit complete: {state_report.applied_count} applied, "
+            f"{state_report.pending_count} pending, "
+            f"{state_report.failed_count} failed"
+        )
 
         return state_report
 
@@ -128,64 +127,80 @@ class ComplianceChecker:
 
         # Check 1: Pending migrations (CRITICAL)
         if state_report.has_pending:
-            violations.append(ComplianceViolation(
-                severity='critical',
-                category='pending_migrations',
-                message=f'{state_report.pending_count} pending migration(s) must be applied before schema modifications',
-                details={
-                    'pending_count': state_report.pending_count,
-                    'pending_versions': [m.version for m in state_report.pending_migrations]
-                }
-            ))
-            recommendations.append(f"Apply {state_report.pending_count} pending migration(s) using: python -m src.cli apply")
+            violations.append(
+                ComplianceViolation(
+                    severity="critical",
+                    category="pending_migrations",
+                    message=f"{state_report.pending_count} pending migration(s) must be applied before schema modifications",
+                    details={
+                        "pending_count": state_report.pending_count,
+                        "pending_versions": [m.version for m in state_report.pending_migrations],
+                    },
+                )
+            )
+            recommendations.append(
+                f"Apply {state_report.pending_count} pending migration(s) using: python -m src.cli apply"
+            )
 
         # Check 2: Failed migrations (CRITICAL)
         if state_report.has_failed:
-            violations.append(ComplianceViolation(
-                severity='critical',
-                category='failed_migrations',
-                message=f'{state_report.failed_count} migration(s) failed during execution',
-                details={
-                    'failed_count': state_report.failed_count,
-                    'failed_versions': [m.version for m in state_report.applied_migrations if m.is_failed]
-                }
-            ))
-            recommendations.append("Review and fix failed migrations, then remove failed records using: python -m src.cli repair")
+            violations.append(
+                ComplianceViolation(
+                    severity="critical",
+                    category="failed_migrations",
+                    message=f"{state_report.failed_count} migration(s) failed during execution",
+                    details={
+                        "failed_count": state_report.failed_count,
+                        "failed_versions": [m.version for m in state_report.applied_migrations if m.is_failed],
+                    },
+                )
+            )
+            recommendations.append(
+                "Review and fix failed migrations, then remove failed records using: python -m src.cli repair"
+            )
 
         # Check 3: Checksum mismatches (HIGH)
         if state_report.has_checksum_mismatches:
-            violations.append(ComplianceViolation(
-                severity='high',
-                category='checksum_mismatch',
-                message=f'{len(state_report.checksum_mismatches)} migration file(s) modified after application (checksum mismatch)',
-                details={
-                    'mismatch_count': len(state_report.checksum_mismatches),
-                    'mismatches': state_report.checksum_mismatches
-                }
-            ))
-            recommendations.append("Migration files should never be modified after application. Review changes and create new migrations instead.")
+            violations.append(
+                ComplianceViolation(
+                    severity="high",
+                    category="checksum_mismatch",
+                    message=f"{len(state_report.checksum_mismatches)} migration file(s) modified after application (checksum mismatch)",
+                    details={
+                        "mismatch_count": len(state_report.checksum_mismatches),
+                        "mismatches": state_report.checksum_mismatches,
+                    },
+                )
+            )
+            recommendations.append(
+                "Migration files should never be modified after application. Review changes and create new migrations instead."
+            )
 
         # Check 4: Orphaned migrations (MEDIUM)
         if state_report.has_orphaned:
-            violations.append(ComplianceViolation(
-                severity='medium',
-                category='orphaned_migrations',
-                message=f'{len(state_report.orphaned_migrations)} migration(s) in database but files not found',
-                details={
-                    'orphaned_count': len(state_report.orphaned_migrations),
-                    'orphaned_versions': [m.version for m in state_report.orphaned_migrations]
-                }
-            ))
+            violations.append(
+                ComplianceViolation(
+                    severity="medium",
+                    category="orphaned_migrations",
+                    message=f"{len(state_report.orphaned_migrations)} migration(s) in database but files not found",
+                    details={
+                        "orphaned_count": len(state_report.orphaned_migrations),
+                        "orphaned_versions": [m.version for m in state_report.orphaned_migrations],
+                    },
+                )
+            )
             recommendations.append("Restore missing migration files or clean up orphaned records.")
 
         # Check 5: Schema migrations table exists
         if not table_exists(self.engine):
-            violations.append(ComplianceViolation(
-                severity='critical',
-                category='missing_schema_table',
-                message='schema_migrations table does not exist',
-                details={'table_name': 'schema_migrations'}
-            ))
+            violations.append(
+                ComplianceViolation(
+                    severity="critical",
+                    category="missing_schema_table",
+                    message="schema_migrations table does not exist",
+                    details={"table_name": "schema_migrations"},
+                )
+            )
             recommendations.append("Initialize the database using: python -m src.cli init")
 
         # Determine overall compliance
@@ -196,7 +211,7 @@ class ComplianceChecker:
             timestamp=datetime.utcnow(),
             violations=violations,
             state_report=state_report,
-            recommendations=recommendations
+            recommendations=recommendations,
         )
 
         self._log(f"Compliance check complete: {'COMPLIANT' if is_compliant else 'VIOLATIONS DETECTED'}")
@@ -223,7 +238,7 @@ class ComplianceChecker:
             error_lines = [
                 f"MIGRATION_VIOLATION: {operation} blocked due to compliance violations",
                 "",
-                "Detected violations:"
+                "Detected violations:",
             ]
 
             for violation in compliance_report.violations:
@@ -277,7 +292,9 @@ class ComplianceChecker:
         if failed:
             self._log(f"FAILED MIGRATION CHECK FAILED: {len(failed)} failed migration(s)")
             for migration in failed:
-                self._log(f"  - {migration.version}: {migration.error_message[:100] if migration.error_message else 'Unknown error'}")
+                self._log(
+                    f"  - {migration.version}: {migration.error_message[:100] if migration.error_message else 'Unknown error'}"
+                )
             return False
 
         self._log("No failed migrations found")
@@ -306,7 +323,7 @@ class ComplianceChecker:
             f"  Failed migrations: {state.failed_count}",
             f"  Last applied: {state.last_applied_version or 'None'} "
             f"({state.last_applied_timestamp.isoformat() if state.last_applied_timestamp else 'N/A'})",
-            ""
+            "",
         ]
 
         if report.violations:
