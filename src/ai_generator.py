@@ -1,4 +1,3 @@
-
 import os
 from typing import Optional, Dict, Any, List
 from sqlalchemy import inspect, text
@@ -86,7 +85,7 @@ class AICodeGenerator:
                             "name": col["name"],
                             "type": str(col["type"]),
                             "nullable": col.get("nullable", True),
-                            "default": col.get("default")
+                            "default": col.get("default"),
                         }
                         for col in columns
                     ],
@@ -95,26 +94,20 @@ class AICodeGenerator:
                         {
                             "constrained_columns": fk["constrained_columns"],
                             "referred_table": fk["referred_table"],
-                            "referred_columns": fk["referred_columns"]
+                            "referred_columns": fk["referred_columns"],
                         }
                         for fk in foreign_keys
-                    ]
+                    ],
                 }
 
-            return {
-                "tables": tables,
-                "schema": schema_info
-            }
+            return {"tables": tables, "schema": schema_info}
 
         except Exception as e:
             print(f"Warning: Could not fetch database context: {e}")
             return {"tables": [], "schema": {}}
 
     def generate_migration(
-        self,
-        prompt: str,
-        file_type: str = "sql",
-        include_context: bool = True
+        self, prompt: str, file_type: str = "sql", include_context: bool = True
     ) -> GeneratedMigration:
         """
         Generate a migration from natural language prompt.
@@ -141,16 +134,13 @@ class AICodeGenerator:
                 sql="-- AI generation not available\n-- No API keys configured",
                 rollback_sql=None,
                 confidence=0.0,
-                warnings=[
-                    "No AI providers configured",
-                    "Set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable"
-                ],
+                warnings=["No AI providers configured", "Set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable"],
                 suggestions=[
                     "Configure OpenAI: export OPENAI_API_KEY=your_key",
                     "Or configure Claude: export ANTHROPIC_API_KEY=your_key",
-                    "Or write migration manually"
+                    "Or write migration manually",
                 ],
-                description=f"Failed: {prompt}"
+                description=f"Failed: {prompt}",
             )
 
         # Get database context if requested
@@ -179,7 +169,7 @@ class AICodeGenerator:
             confidence=0.0,
             warnings=["All AI providers failed", f"Last error: {last_error}"],
             suggestions=["Check API key configuration", "Check internet connection", "Write migration manually"],
-            description=f"Failed: {prompt}"
+            description=f"Failed: {prompt}",
         )
 
 
@@ -195,11 +185,7 @@ def get_ai_generator() -> AICodeGenerator:
     return _generator
 
 
-def generate_migration_with_ai(
-    prompt: str,
-    file_type: str = "sql",
-    include_context: bool = True
-) -> GeneratedMigration:
+def generate_migration_with_ai(prompt: str, file_type: str = "sql", include_context: bool = True) -> GeneratedMigration:
     """
     Convenience function to generate migration with AI.
 

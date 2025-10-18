@@ -1,4 +1,3 @@
-
 import hashlib
 import re
 from dataclasses import dataclass
@@ -7,12 +6,13 @@ from pathlib import Path
 from typing import List, Optional
 
 MIGRATIONS_DIR = Path("migrations")
-MIGRATION_FILE_PATTERN = re.compile(r'^(\d{14})_(.+)\.(sql|py)$')
+MIGRATION_FILE_PATTERN = re.compile(r"^(\d{14})_(.+)\.(sql|py)$")
 
 
 @dataclass
 class MigrationFile:
     """Represents a migration file with its metadata."""
+
     version: str
     description: str
     file_path: Path
@@ -23,7 +23,7 @@ class MigrationFile:
     @property
     def timestamp(self) -> datetime:
         """Parse version as datetime."""
-        return datetime.strptime(self.version, '%Y%m%d%H%M%S')
+        return datetime.strptime(self.version, "%Y%m%d%H%M%S")
 
     def __lt__(self, other):
         """Enable sorting by version."""
@@ -32,7 +32,7 @@ class MigrationFile:
 
 def calculate_checksum(content: str) -> str:
     """Calculate SHA-256 checksum of migration content."""
-    return hashlib.sha256(content.encode('utf-8')).hexdigest()
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 
 def validate_migration_filename(filename: str) -> Optional[tuple]:
@@ -50,7 +50,7 @@ def validate_migration_filename(filename: str) -> Optional[tuple]:
 
     # Validate the timestamp is a valid date
     try:
-        datetime.strptime(version, '%Y%m%d%H%M%S')
+        datetime.strptime(version, "%Y%m%d%H%M%S")
     except ValueError:
         return None
 
@@ -79,7 +79,7 @@ def load_migration_file(file_path: Path) -> Optional[MigrationFile]:
 
     # Read file content
     try:
-        content = file_path.read_text(encoding='utf-8')
+        content = file_path.read_text(encoding="utf-8")
     except Exception as e:
         print(f"Error reading migration file {filename}: {e}")
         return None
@@ -93,7 +93,7 @@ def load_migration_file(file_path: Path) -> Optional[MigrationFile]:
         file_path=file_path,
         file_type=file_type,
         checksum=checksum,
-        content=content
+        content=content,
     )
 
 
@@ -114,8 +114,8 @@ def scan_migration_files(migrations_dir: Path = MIGRATIONS_DIR) -> List[Migratio
     migration_files = []
 
     # Scan for .sql and .py files
-    for file_path in migrations_dir.glob('*'):
-        if file_path.is_file() and file_path.suffix in ['.sql', '.py']:
+    for file_path in migrations_dir.glob("*"):
+        if file_path.is_file() and file_path.suffix in [".sql", ".py"]:
             migration_file = load_migration_file(file_path)
             if migration_file:
                 migration_files.append(migration_file)
@@ -144,7 +144,7 @@ def get_migration_by_version(version: str, migrations_dir: Path = MIGRATIONS_DIR
     return None
 
 
-def generate_migration_filename(description: str, file_type: str = 'sql') -> str:
+def generate_migration_filename(description: str, file_type: str = "sql") -> str:
     """
     Generate a migration filename with current timestamp.
 
@@ -156,17 +156,18 @@ def generate_migration_filename(description: str, file_type: str = 'sql') -> str
         Generated filename following the convention
     """
     # Generate timestamp
-    timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
+    timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
 
     # Sanitize description (replace spaces and special chars with underscores)
-    sanitized_desc = re.sub(r'[^a-zA-Z0-9_]', '_', description.lower())
-    sanitized_desc = re.sub(r'_+', '_', sanitized_desc).strip('_')
+    sanitized_desc = re.sub(r"[^a-zA-Z0-9_]", "_", description.lower())
+    sanitized_desc = re.sub(r"_+", "_", sanitized_desc).strip("_")
 
     return f"{timestamp}_{sanitized_desc}.{file_type}"
 
 
-def create_migration_file(description: str, content: str = "", file_type: str = 'sql',
-                          migrations_dir: Path = MIGRATIONS_DIR) -> Path:
+def create_migration_file(
+    description: str, content: str = "", file_type: str = "sql", migrations_dir: Path = MIGRATIONS_DIR
+) -> Path:
     """
     Create a new migration file with the proper naming convention.
 
@@ -188,7 +189,7 @@ def create_migration_file(description: str, content: str = "", file_type: str = 
 
     # Default content templates
     if not content:
-        if file_type == 'sql':
+        if file_type == "sql":
             content = f"""-- Migration: {description}
 -- Created: {datetime.now().isoformat()}
 
@@ -218,7 +219,7 @@ def down(connection):
 '''
 
     # Write the file
-    file_path.write_text(content, encoding='utf-8')
+    file_path.write_text(content, encoding="utf-8")
     print(f"Created migration: {filename}")
 
     return file_path
