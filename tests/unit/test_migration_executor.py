@@ -2,15 +2,16 @@
 Unit tests for migration_executor module.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from pathlib import Path
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.migration_executor import (
-    MigrationExecutor,
     MigrationExecutionError,
+    MigrationExecutor,
     apply_pending_migrations,
     rollback_migrations,
 )

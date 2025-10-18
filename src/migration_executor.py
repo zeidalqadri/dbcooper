@@ -7,13 +7,13 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from .database import get_engine
-from .migration_loader import MigrationFile, scan_migration_files, get_migration_by_version
+from .migration_loader import MigrationFile, get_migration_by_version, scan_migration_files
 from .migration_state import (
-    get_pending_migrations,
-    record_migration_success,
-    record_migration_failure,
-    delete_migration_record,
     PendingMigration,
+    delete_migration_record,
+    get_pending_migrations,
+    record_migration_failure,
+    record_migration_success,
 )
 
 

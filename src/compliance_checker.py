@@ -1,9 +1,9 @@
 from dataclasses import dataclass
-from typing import List, Optional, Dict, Any
 from datetime import datetime
+from typing import Any, Dict, List, Optional
 
-from .migration_state import get_migration_state_report, MigrationStateReport, get_applied_migrations, table_exists
 from .database import get_engine
+from .migration_state import MigrationStateReport, get_applied_migrations, get_migration_state_report, table_exists
 
 
 @dataclass

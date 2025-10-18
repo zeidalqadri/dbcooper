@@ -1,27 +1,27 @@
-from datetime import datetime
-from typing import List, Optional, Dict, Any
 import asyncio
 import json
-from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException, BackgroundTasks, status, WebSocket, WebSocketDisconnect, UploadFile, File
-from fastapi.responses import JSONResponse, StreamingResponse
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from .database import get_engine, check_connection
+from .ai_generator import generate_migration_with_ai, get_ai_generator
+from .compliance_checker import ComplianceChecker, ComplianceViolationError, check_compliance
+from .database import check_connection, get_engine
+from .migration_executor import apply_pending_migrations, rollback_migrations
+from .migration_loader import create_migration_file, scan_migration_files
 from .migration_state import (
-    get_migration_state_report,
-    get_applied_migrations,
-    get_pending_migrations,
     AppliedMigration,
     PendingMigration,
+    get_applied_migrations,
+    get_migration_state_report,
+    get_pending_migrations,
 )
-from .migration_executor import apply_pending_migrations, rollback_migrations
-from .compliance_checker import check_compliance, ComplianceChecker, ComplianceViolationError
-from .migration_loader import scan_migration_files, create_migration_file
-from .schema_interceptor import enable_schema_interception, disable_schema_interception
-from .ai_generator import generate_migration_with_ai, get_ai_generator
-
+from .schema_interceptor import disable_schema_interception, enable_schema_interception
 
 # ============================================================================
 # Pydantic Models
@@ -669,8 +669,8 @@ async def upload_migration_file(file: UploadFile = File(...), description: Optio
         description: Optional description (will use filename if not provided)
     """
     try:
-        from pathlib import Path
         import re
+        from pathlib import Path
 
         # Validate file type
         if not file.filename.endswith((".sql", ".py")):

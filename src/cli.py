@@ -1,13 +1,15 @@
-import click
 import sys
 from datetime import datetime
+
+import click
+
 from . import database, migration_manager
-from .migration_loader import create_migration_file, scan_migration_files
-from .migration_executor import apply_pending_migrations, rollback_migrations
-from .migration_state import get_migration_state_report, get_applied_migrations, get_pending_migrations
-from .compliance_checker import check_compliance, ComplianceChecker
-from .schema_interceptor import enable_schema_interception, disable_schema_interception
 from .ai_generator import generate_migration_with_ai, get_ai_generator
+from .compliance_checker import ComplianceChecker, check_compliance
+from .migration_executor import apply_pending_migrations, rollback_migrations
+from .migration_loader import create_migration_file, scan_migration_files
+from .migration_state import get_applied_migrations, get_migration_state_report, get_pending_migrations
+from .schema_interceptor import disable_schema_interception, enable_schema_interception
 
 
 @click.group()

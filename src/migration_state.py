@@ -1,13 +1,13 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import Any, Dict, List, Optional
 
 from sqlalchemy import select, text
 from sqlalchemy.exc import SQLAlchemyError
 
 from .database import get_engine
-from .migration_manager import schema_migrations_table, SCHEMA_TABLE_NAME
-from .migration_loader import scan_migration_files, MigrationFile
+from .migration_loader import MigrationFile, scan_migration_files
+from .migration_manager import SCHEMA_TABLE_NAME, schema_migrations_table
 
 
 @dataclass

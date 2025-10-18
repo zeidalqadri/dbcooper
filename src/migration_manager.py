@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import DDL, Column, DateTime, MetaData, String, Table, Text, Float, create_engine, event
+from sqlalchemy import DDL, Column, DateTime, Float, MetaData, String, Table, Text, create_engine, event
 
 from .database import get_engine
 

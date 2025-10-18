@@ -1,5 +1,6 @@
 from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
+
 from .config import get_database_uri
 
 _engine = None

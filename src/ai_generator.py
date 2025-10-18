@@ -1,9 +1,10 @@
 import os
-from typing import Optional, Dict, Any, List
+from typing import Any, Dict, List, Optional
+
 from sqlalchemy import inspect, text
 
+from .ai_providers import AIProvider, ClaudeProvider, GeneratedMigration, OpenAIProvider
 from .database import get_engine
-from .ai_providers import AIProvider, GeneratedMigration, OpenAIProvider, ClaudeProvider
 
 
 class AICodeGenerator:
