@@ -1,11 +1,9 @@
-
 import hashlib
 import os
 from datetime import datetime
 from pathlib import Path
 
-from sqlalchemy import (DDL, Column, DateTime, MetaData, String, Table, Text, Float,
-                        create_engine, event)
+from sqlalchemy import DDL, Column, DateTime, Float, MetaData, String, Table, Text, create_engine, event
 
 from .database import get_engine
 
@@ -21,11 +19,12 @@ schema_migrations_table = Table(
     Column("description", String, nullable=False),
     Column("applied_at", DateTime, nullable=False, default=datetime.utcnow),
     Column("checksum", String, nullable=False),
-    Column("status", String, nullable=False, default='success'),  # success, failed, pending
+    Column("status", String, nullable=False, default="success"),  # success, failed, pending
     Column("execution_time", Float, nullable=True),  # Time in seconds
     Column("error_message", Text, nullable=True),  # Error details if failed
     Column("rollback_sql", Text, nullable=True),  # SQL to rollback this migration
 )
+
 
 def initialize_db():
     """
@@ -42,4 +41,3 @@ def initialize_db():
             raise
     else:
         print("Database is already initialized.")
-

@@ -1,7 +1,7 @@
-
-import os
 import json
-from typing import Optional, Dict, Any
+import os
+from typing import Any, Dict, Optional
+
 from openai import OpenAI
 
 from .base import AIProvider, GeneratedMigration
@@ -71,10 +71,7 @@ Response:
         return "\n".join(parts)
 
     def generate_migration(
-        self,
-        prompt: str,
-        context: Optional[Dict[str, Any]] = None,
-        file_type: str = "sql"
+        self, prompt: str, context: Optional[Dict[str, Any]] = None, file_type: str = "sql"
     ) -> GeneratedMigration:
         """Generate migration using OpenAI"""
 
@@ -90,10 +87,10 @@ Response:
                 model=self.model,
                 messages=[
                     {"role": "system", "content": self._build_system_prompt()},
-                    {"role": "user", "content": self._build_user_prompt(prompt, context)}
+                    {"role": "user", "content": self._build_user_prompt(prompt, context)},
                 ],
                 temperature=0.1,  # Low temperature for consistency
-                response_format={"type": "json_object"}
+                response_format={"type": "json_object"},
             )
 
             # Parse response
@@ -106,7 +103,7 @@ Response:
                 warnings=result.get("warnings", []),
                 suggestions=result.get("suggestions", []),
                 description=result.get("description", prompt),
-                reasoning=result.get("reasoning")
+                reasoning=result.get("reasoning"),
             )
 
         except Exception as e:
@@ -117,5 +114,5 @@ Response:
                 confidence=0.0,
                 warnings=[f"AI generation failed: {str(e)}"],
                 suggestions=["Please write migration manually", "Check API key configuration"],
-                description=f"Failed: {prompt}"
+                description=f"Failed: {prompt}",
             )

@@ -1,16 +1,14 @@
-
 import re
 import threading
 from contextlib import contextmanager
-from typing import Optional, Set
 from datetime import datetime
+from typing import Optional, Set
 
 from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
 
-from .compliance_checker import enforce_migration_compliance, ComplianceViolationError
+from .compliance_checker import ComplianceViolationError, enforce_migration_compliance
 from .database import get_engine
-
 
 # Thread-local storage for migration context
 _migration_context = threading.local()
@@ -24,32 +22,32 @@ class SchemaInterceptor:
 
     # DDL statement patterns to intercept
     DDL_PATTERNS = [
-        r'^\s*CREATE\s+TABLE',
-        r'^\s*ALTER\s+TABLE',
-        r'^\s*DROP\s+TABLE',
-        r'^\s*CREATE\s+INDEX',
-        r'^\s*DROP\s+INDEX',
-        r'^\s*CREATE\s+SCHEMA',
-        r'^\s*DROP\s+SCHEMA',
-        r'^\s*CREATE\s+SEQUENCE',
-        r'^\s*DROP\s+SEQUENCE',
-        r'^\s*CREATE\s+TYPE',
-        r'^\s*DROP\s+TYPE',
-        r'^\s*TRUNCATE\s+TABLE',
+        r"^\s*CREATE\s+TABLE",
+        r"^\s*ALTER\s+TABLE",
+        r"^\s*DROP\s+TABLE",
+        r"^\s*CREATE\s+INDEX",
+        r"^\s*DROP\s+INDEX",
+        r"^\s*CREATE\s+SCHEMA",
+        r"^\s*DROP\s+SCHEMA",
+        r"^\s*CREATE\s+SEQUENCE",
+        r"^\s*DROP\s+SEQUENCE",
+        r"^\s*CREATE\s+TYPE",
+        r"^\s*DROP\s+TYPE",
+        r"^\s*TRUNCATE\s+TABLE",
     ]
 
     # Statements that should NOT trigger compliance checks
     BYPASS_PATTERNS = [
-        r'^\s*CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+schema_migrations',
-        r'^\s*CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+ddl_audit_log',
-        r'^\s*CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+migration_execution_context',
-        r'^\s*SELECT',
-        r'^\s*INSERT',
-        r'^\s*UPDATE',
-        r'^\s*DELETE',
-        r'^\s*BEGIN',
-        r'^\s*COMMIT',
-        r'^\s*ROLLBACK',
+        r"^\s*CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+schema_migrations",
+        r"^\s*CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+ddl_audit_log",
+        r"^\s*CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+migration_execution_context",
+        r"^\s*SELECT",
+        r"^\s*INSERT",
+        r"^\s*UPDATE",
+        r"^\s*DELETE",
+        r"^\s*BEGIN",
+        r"^\s*COMMIT",
+        r"^\s*ROLLBACK",
     ]
 
     def __init__(self, engine: Optional[Engine] = None, strict_mode: bool = True):
@@ -82,11 +80,11 @@ class SchemaInterceptor:
 
     def _is_in_migration_context(self) -> bool:
         """Check if we're currently executing within a migration context."""
-        return getattr(_migration_context, 'active', False)
+        return getattr(_migration_context, "active", False)
 
     def _get_migration_version(self) -> Optional[str]:
         """Get the current migration version if in migration context."""
-        return getattr(_migration_context, 'version', None)
+        return getattr(_migration_context, "version", None)
 
     def _before_cursor_execute(self, conn, cursor, statement, parameters, context, executemany):
         """
@@ -129,9 +127,9 @@ class SchemaInterceptor:
                 # Re-raise the exception to prevent execution
                 raise
 
-    def _log_ddl_operation(self, statement: str, blocked: bool,
-                           migration_version: Optional[str] = None,
-                           block_reason: Optional[str] = None):
+    def _log_ddl_operation(
+        self, statement: str, blocked: bool, migration_version: Optional[str] = None, block_reason: Optional[str] = None
+    ):
         """
         Log DDL operation to the audit log.
 
@@ -143,20 +141,21 @@ class SchemaInterceptor:
         """
         try:
             # Extract operation type
-            match = re.match(r'^\s*(\w+)\s+(\w+)', statement, re.IGNORECASE)
-            event_type = match.group(1).upper() if match else 'UNKNOWN'
+            match = re.match(r"^\s*(\w+)\s+(\w+)", statement, re.IGNORECASE)
+            event_type = match.group(1).upper() if match else "UNKNOWN"
             object_type = match.group(2).upper() if match and match.lastindex >= 2 else None
 
             # Log to ddl_audit_log table
             with self.engine.begin() as conn:
                 # Check if table exists first
-                result = conn.execute(text(
-                    "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'ddl_audit_log')"
-                ))
+                result = conn.execute(
+                    text("SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'ddl_audit_log')")
+                )
                 if not result.scalar():
                     return  # Table doesn't exist yet, skip logging
 
-                log_stmt = text("""
+                log_stmt = text(
+                    """
                     INSERT INTO ddl_audit_log (
                         event_type, object_type, sql_command, blocked,
                         block_reason, migration_context, user_name, application_name
@@ -164,16 +163,20 @@ class SchemaInterceptor:
                         :event_type, :object_type, :sql_command, :blocked,
                         :block_reason, :migration_context, current_user, current_setting('application_name', true)
                     )
-                """)
+                """
+                )
 
-                conn.execute(log_stmt, {
-                    'event_type': event_type,
-                    'object_type': object_type,
-                    'sql_command': statement[:5000],  # Limit to 5000 chars
-                    'blocked': blocked,
-                    'block_reason': block_reason,
-                    'migration_context': migration_version
-                })
+                conn.execute(
+                    log_stmt,
+                    {
+                        "event_type": event_type,
+                        "object_type": object_type,
+                        "sql_command": statement[:5000],  # Limit to 5000 chars
+                        "blocked": blocked,
+                        "block_reason": block_reason,
+                        "migration_context": migration_version,
+                    },
+                )
 
         except Exception as e:
             print(f"[INTERCEPTOR] Warning: Failed to log DDL operation: {e}")
@@ -181,23 +184,14 @@ class SchemaInterceptor:
     def enable(self):
         """Enable the schema interceptor."""
         if not self.enabled:
-            event.listen(
-                self.engine,
-                'before_cursor_execute',
-                self._before_cursor_execute,
-                retval=False
-            )
+            event.listen(self.engine, "before_cursor_execute", self._before_cursor_execute, retval=False)
             self.enabled = True
             print("[INTERCEPTOR] Schema interceptor ENABLED")
 
     def disable(self):
         """Disable the schema interceptor."""
         if self.enabled:
-            event.remove(
-                self.engine,
-                'before_cursor_execute',
-                self._before_cursor_execute
-            )
+            event.remove(self.engine, "before_cursor_execute", self._before_cursor_execute)
             self.enabled = False
             print("[INTERCEPTOR] Schema interceptor DISABLED")
 
@@ -222,11 +216,9 @@ class SchemaInterceptor:
         try:
             with self.engine.begin() as conn:
                 # Check if function exists
-                result = conn.execute(text(
-                    "SELECT EXISTS (SELECT FROM pg_proc WHERE proname = 'migration_start')"
-                ))
+                result = conn.execute(text("SELECT EXISTS (SELECT FROM pg_proc WHERE proname = 'migration_start')"))
                 if result.scalar():
-                    conn.execute(text("SELECT migration_start(:version)"), {'version': migration_version})
+                    conn.execute(text("SELECT migration_start(:version)"), {"version": migration_version})
         except Exception as e:
             print(f"[INTERCEPTOR] Warning: Could not mark migration start: {e}")
 
@@ -238,11 +230,9 @@ class SchemaInterceptor:
             # Mark migration end in database
             try:
                 with self.engine.begin() as conn:
-                    result = conn.execute(text(
-                        "SELECT EXISTS (SELECT FROM pg_proc WHERE proname = 'migration_end')"
-                    ))
+                    result = conn.execute(text("SELECT EXISTS (SELECT FROM pg_proc WHERE proname = 'migration_end')"))
                     if result.scalar():
-                        conn.execute(text("SELECT migration_end(:version)"), {'version': migration_version})
+                        conn.execute(text("SELECT migration_end(:version)"), {"version": migration_version})
             except Exception as e:
                 print(f"[INTERCEPTOR] Warning: Could not mark migration end: {e}")
 

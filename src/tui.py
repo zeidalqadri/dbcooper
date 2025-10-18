@@ -1,21 +1,21 @@
-
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.layout import Layout
-from rich.live import Live
-from rich.text import Text
-from rich.prompt import Prompt, Confirm
-from rich.progress import Progress, SpinnerColumn, TextColumn
 import time
 from datetime import datetime
 from typing import Optional
 
-from .migration_state import get_migration_state_report, get_applied_migrations, get_pending_migrations
-from .migration_executor import apply_pending_migrations
-from .compliance_checker import check_compliance
-from .migration_loader import create_migration_file
+from rich.console import Console
+from rich.layout import Layout
+from rich.live import Live
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.prompt import Confirm, Prompt
+from rich.table import Table
+from rich.text import Text
+
 from .ai_generator import generate_migration_with_ai, get_ai_generator
+from .compliance_checker import check_compliance
+from .migration_executor import apply_pending_migrations
+from .migration_loader import create_migration_file
+from .migration_state import get_applied_migrations, get_migration_state_report, get_pending_migrations
 
 console = Console()
 
@@ -50,9 +50,14 @@ class MigrationTUI:
             compliance_icon = "✓" if state.is_compliant else "✗"
             compliance_style = "green" if state.is_compliant else "red"
 
-            table.add_row("Status", f"[{compliance_style}]{compliance_icon} {'COMPLIANT' if state.is_compliant else 'VIOLATIONS'}[/{compliance_style}]")
+            table.add_row(
+                "Status",
+                f"[{compliance_style}]{compliance_icon} {'COMPLIANT' if state.is_compliant else 'VIOLATIONS'}[/{compliance_style}]",
+            )
             table.add_row("Applied Migrations", str(state.applied_count))
-            table.add_row("Pending Migrations", f"[yellow]{state.pending_count}[/yellow]" if state.pending_count > 0 else "0")
+            table.add_row(
+                "Pending Migrations", f"[yellow]{state.pending_count}[/yellow]" if state.pending_count > 0 else "0"
+            )
             table.add_row("Failed Migrations", f"[red]{state.failed_count}[/red]" if state.failed_count > 0 else "0")
 
             if state.last_applied_version:
@@ -63,7 +68,9 @@ class MigrationTUI:
 
             # Warnings
             if state.has_pending:
-                self.console.print(f"\n[yellow]⚠ {state.pending_count} pending migration(s) need to be applied[/yellow]")
+                self.console.print(
+                    f"\n[yellow]⚠ {state.pending_count} pending migration(s) need to be applied[/yellow]"
+                )
             if state.has_failed:
                 self.console.print(f"[red]✗ {state.failed_count} failed migration(s) need attention[/red]")
             if state.has_checksum_mismatches:
@@ -104,10 +111,7 @@ class MigrationTUI:
                     exec_time = f"{mig.execution_time:.2f}s" if mig.execution_time else "N/A"
 
                     table.add_row(
-                        f"[{status_style}]{status_icon}[/{status_style}]",
-                        mig.version,
-                        mig.description,
-                        exec_time
+                        f"[{status_style}]{status_icon}[/{status_style}]", mig.version, mig.description, exec_time
                     )
 
                 self.console.print(table)
@@ -124,7 +128,9 @@ class MigrationTUI:
             if report.is_compliant:
                 self.console.print(Panel("[green]✓ COMPLIANT[/green]", title="Compliance Status"))
             else:
-                self.console.print(Panel(f"[red]✗ {report.violation_count} VIOLATION(S)[/red]", title="Compliance Status"))
+                self.console.print(
+                    Panel(f"[red]✗ {report.violation_count} VIOLATION(S)[/red]", title="Compliance Status")
+                )
 
             # Violations
             if report.violations:
@@ -134,17 +140,10 @@ class MigrationTUI:
                 table.add_column("Message")
 
                 for violation in report.violations:
-                    severity_colors = {
-                        'critical': 'red',
-                        'high': 'orange1',
-                        'medium': 'yellow',
-                        'low': 'cyan'
-                    }
-                    color = severity_colors.get(violation.severity, 'white')
+                    severity_colors = {"critical": "red", "high": "orange1", "medium": "yellow", "low": "cyan"}
+                    color = severity_colors.get(violation.severity, "white")
                     table.add_row(
-                        f"[{color}]{violation.severity.upper()}[/{color}]",
-                        violation.category,
-                        violation.message
+                        f"[{color}]{violation.severity.upper()}[/{color}]", violation.category, violation.message
                     )
 
                 self.console.print(table)
@@ -179,9 +178,7 @@ class MigrationTUI:
 
             # Apply migrations with progress
             with Progress(
-                SpinnerColumn(),
-                TextColumn("[progress.description]{task.description}"),
-                console=self.console
+                SpinnerColumn(), TextColumn("[progress.description]{task.description}"), console=self.console
             ) as progress:
                 task = progress.add_task("[cyan]Applying migrations...", total=len(pending))
 
@@ -242,11 +239,7 @@ class MigrationTUI:
 
             # Generate with progress
             self.console.print("\n[cyan]Generating with AI...[/cyan]")
-            result = generate_migration_with_ai(
-                prompt=prompt,
-                file_type=file_type,
-                include_context=True
-            )
+            result = generate_migration_with_ai(prompt=prompt, file_type=file_type, include_context=True)
 
             # Display results
             self.console.print("\n" + "=" * 50)
@@ -275,9 +268,7 @@ class MigrationTUI:
             if result.confidence > 0.0:
                 if Confirm.ask("\nSave this migration?"):
                     file_path = create_migration_file(
-                        description=result.description,
-                        content=result.sql,
-                        file_type=file_type
+                        description=result.description, content=result.sql, file_type=file_type
                     )
                     self.console.print(f"\n[green]✓ Saved: {file_path.name}[/green]")
                 else:
