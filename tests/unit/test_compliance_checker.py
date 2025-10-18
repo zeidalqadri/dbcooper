@@ -2,14 +2,15 @@
 Unit tests for compliance_checker module.
 """
 
-import pytest
-from unittest.mock import Mock, patch, MagicMock
 from datetime import datetime
+from unittest.mock import MagicMock, Mock, patch
+
+import pytest
 
 from src.compliance_checker import (
     ComplianceChecker,
-    ComplianceViolation,
     ComplianceReport,
+    ComplianceViolation,
     ComplianceViolationError,
     check_compliance,
 )

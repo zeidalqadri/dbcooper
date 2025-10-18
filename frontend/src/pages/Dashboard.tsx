@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import useSWR from 'swr';
 import { getMigrationStatus, getAppliedMigrations } from '../services/api';
 import type { MigrationStatus, AppliedMigration } from '../types';
@@ -17,7 +17,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Listen for WebSocket updates
-    const handleStatusUpdate = (data: any) => {
+    const handleStatusUpdate = (_data: any) => {
       mutate();
     };
 

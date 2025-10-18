@@ -1,20 +1,21 @@
-from rich.console import Console
-from rich.table import Table
-from rich.panel import Panel
-from rich.layout import Layout
-from rich.live import Live
-from rich.text import Text
-from rich.prompt import Prompt, Confirm
-from rich.progress import Progress, SpinnerColumn, TextColumn
 import time
 from datetime import datetime
 from typing import Optional
 
-from .migration_state import get_migration_state_report, get_applied_migrations, get_pending_migrations
-from .migration_executor import apply_pending_migrations
-from .compliance_checker import check_compliance
-from .migration_loader import create_migration_file
+from rich.console import Console
+from rich.layout import Layout
+from rich.live import Live
+from rich.panel import Panel
+from rich.progress import Progress, SpinnerColumn, TextColumn
+from rich.prompt import Confirm, Prompt
+from rich.table import Table
+from rich.text import Text
+
 from .ai_generator import generate_migration_with_ai, get_ai_generator
+from .compliance_checker import check_compliance
+from .migration_executor import apply_pending_migrations
+from .migration_loader import create_migration_file
+from .migration_state import get_applied_migrations, get_migration_state_report, get_pending_migrations
 
 console = Console()
 

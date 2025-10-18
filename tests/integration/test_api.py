@@ -2,10 +2,11 @@
 Integration tests for FastAPI endpoints.
 """
 
-import pytest
-from unittest.mock import patch, Mock
-from fastapi.testclient import TestClient
 from datetime import datetime
+from unittest.mock import Mock, patch
+
+import pytest
+from fastapi.testclient import TestClient
 
 
 @pytest.fixture

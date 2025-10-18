@@ -1,15 +1,14 @@
 import re
 import threading
 from contextlib import contextmanager
-from typing import Optional, Set
 from datetime import datetime
+from typing import Optional, Set
 
 from sqlalchemy import event, text
 from sqlalchemy.engine import Engine
 
-from .compliance_checker import enforce_migration_compliance, ComplianceViolationError
+from .compliance_checker import ComplianceViolationError, enforce_migration_compliance
 from .database import get_engine
-
 
 # Thread-local storage for migration context
 _migration_context = threading.local()
