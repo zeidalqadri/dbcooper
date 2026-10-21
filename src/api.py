@@ -1,32 +1,32 @@
-
-from datetime import datetime
-from typing import List, Optional, Dict, Any
 import asyncio
 import json
-from pydantic import BaseModel, Field
-from fastapi import FastAPI, HTTPException, BackgroundTasks, status, WebSocket, WebSocketDisconnect, UploadFile, File
-from fastapi.responses import JSONResponse, StreamingResponse
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import BackgroundTasks, FastAPI, File, HTTPException, UploadFile, WebSocket, WebSocketDisconnect, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from .database import get_engine, check_connection
-from .migration_state import (
-    get_migration_state_report,
-    get_applied_migrations,
-    get_pending_migrations,
-    AppliedMigration,
-    PendingMigration
-)
-from .migration_executor import apply_pending_migrations, rollback_migrations
-from .compliance_checker import check_compliance, ComplianceChecker, ComplianceViolationError
-from .migration_loader import scan_migration_files, create_migration_file
-from .schema_interceptor import enable_schema_interception, disable_schema_interception
 from .ai_generator import generate_migration_with_ai, get_ai_generator
-
+from .compliance_checker import ComplianceChecker, ComplianceViolationError, check_compliance
+from .database import check_connection, get_engine
+from .migration_executor import apply_pending_migrations, rollback_migrations
+from .migration_loader import create_migration_file, scan_migration_files
+from .migration_state import (
+    AppliedMigration,
+    PendingMigration,
+    get_applied_migrations,
+    get_migration_state_report,
+    get_pending_migrations,
+)
+from .schema_interceptor import disable_schema_interception, enable_schema_interception
 
 # ============================================================================
 # Pydantic Models
 # ============================================================================
+
 
 class HealthResponse(BaseModel):
     status: str
@@ -135,7 +135,7 @@ app = FastAPI(
     description="Comprehensive API for managing database migrations with compliance enforcement",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # Add CORS middleware for frontend
@@ -146,6 +146,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # WebSocket connection manager
 class ConnectionManager:
@@ -166,12 +167,14 @@ class ConnectionManager:
             except:
                 pass
 
+
 manager = ConnectionManager()
 
 
 # ============================================================================
 # Health & Status Endpoints
 # ============================================================================
+
 
 @app.get("/api/health", response_model=HealthResponse, tags=["Health"])
 async def health_check():
@@ -182,17 +185,14 @@ async def health_check():
     try:
         check_connection()
         return HealthResponse(
-            status="healthy",
-            timestamp=datetime.utcnow(),
-            database_connected=True,
-            message="System operational"
+            status="healthy", timestamp=datetime.utcnow(), database_connected=True, message="System operational"
         )
     except Exception as e:
         return HealthResponse(
             status="unhealthy",
             timestamp=datetime.utcnow(),
             database_connected=False,
-            message=f"Database connection failed: {str(e)}"
+            message=f"Database connection failed: {str(e)}",
         )
 
 
@@ -211,18 +211,18 @@ async def get_status():
             failed_count=state_report.failed_count,
             last_applied_version=state_report.last_applied_version,
             last_applied_timestamp=state_report.last_applied_timestamp,
-            is_compliant=state_report.is_compliant
+            is_compliant=state_report.is_compliant,
         )
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get migration status: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get migration status: {str(e)}"
         )
 
 
 # ============================================================================
 # Migration Query Endpoints
 # ============================================================================
+
 
 @app.get("/api/migrations/applied", response_model=List[AppliedMigrationResponse], tags=["Migrations"])
 async def list_applied_migrations(limit: int = 100):
@@ -243,14 +243,13 @@ async def list_applied_migrations(limit: int = 100):
                 checksum=m.checksum,
                 status=m.status,
                 execution_time=m.execution_time,
-                error_message=m.error_message
+                error_message=m.error_message,
             )
             for m in applied[:limit]
         ]
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get applied migrations: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get applied migrations: {str(e)}"
         )
 
 
@@ -266,14 +265,13 @@ async def list_pending_migrations():
                 description=m.description,
                 file_path=m.file_path,
                 checksum=m.checksum,
-                file_type=m.file_type
+                file_type=m.file_type,
             )
             for m in pending
         ]
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get pending migrations: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get pending migrations: {str(e)}"
         )
 
 
@@ -292,6 +290,7 @@ async def get_migration_history(limit: int = 50):
 # Migration Execution Endpoints
 # ============================================================================
 
+
 @app.post("/api/migrations/apply", response_model=ApplyMigrationsResponse, tags=["Migrations"])
 async def apply_migrations(request: ApplyMigrationsRequest):
     """
@@ -300,35 +299,28 @@ async def apply_migrations(request: ApplyMigrationsRequest):
     This endpoint executes migrations in order and stops on first failure.
     """
     try:
-        successful, failed, errors = apply_pending_migrations(
-            dry_run=request.dry_run,
-            verbose=request.verbose
-        )
+        successful, failed, errors = apply_pending_migrations(dry_run=request.dry_run, verbose=request.verbose)
 
         if failed > 0:
             return ApplyMigrationsResponse(
                 successful=successful,
                 failed=failed,
                 errors=errors,
-                message=f"Migration execution completed with {failed} failure(s)"
+                message=f"Migration execution completed with {failed} failure(s)",
             )
 
         return ApplyMigrationsResponse(
             successful=successful,
             failed=failed,
             errors=errors,
-            message=f"Successfully applied {successful} migration(s)"
+            message=f"Successfully applied {successful} migration(s)",
         )
 
     except ComplianceViolationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Compliance violation: {str(e)}"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=f"Compliance violation: {str(e)}")
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to apply migrations: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to apply migrations: {str(e)}"
         )
 
 
@@ -342,9 +334,7 @@ async def rollback_migration(request: RollbackRequest):
     """
     try:
         successful, failed, errors = rollback_migrations(
-            count=request.count,
-            dry_run=request.dry_run,
-            verbose=request.verbose
+            count=request.count, dry_run=request.dry_run, verbose=request.verbose
         )
 
         if failed > 0:
@@ -352,20 +342,19 @@ async def rollback_migration(request: RollbackRequest):
                 successful=successful,
                 failed=failed,
                 errors=errors,
-                message=f"Rollback completed with {failed} failure(s)"
+                message=f"Rollback completed with {failed} failure(s)",
             )
 
         return ApplyMigrationsResponse(
             successful=successful,
             failed=failed,
             errors=errors,
-            message=f"Successfully rolled back {successful} migration(s)"
+            message=f"Successfully rolled back {successful} migration(s)",
         )
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to rollback migrations: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to rollback migrations: {str(e)}"
         )
 
 
@@ -379,27 +368,24 @@ async def create_migration(request: CreateMigrationRequest):
         file_type: Type of migration file (sql or py)
     """
     try:
-        file_path = create_migration_file(
-            description=request.description,
-            file_type=request.file_type
-        )
+        file_path = create_migration_file(description=request.description, file_type=request.file_type)
 
         # Extract version from filename
         import re
-        match = re.match(r'^(\d{14})_', file_path.name)
+
+        match = re.match(r"^(\d{14})_", file_path.name)
         version = match.group(1) if match else "unknown"
 
         return CreateMigrationResponse(
             version=version,
             filename=file_path.name,
             file_path=str(file_path),
-            message=f"Migration file created successfully"
+            message=f"Migration file created successfully",
         )
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to create migration: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to create migration: {str(e)}"
         )
 
 
@@ -427,15 +413,13 @@ async def generate_migration_ai(request: AIGenerateRequest):
                 detail={
                     "message": "AI generation not available - no API keys configured",
                     "available_providers": available_providers,
-                    "instructions": "Set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable"
-                }
+                    "instructions": "Set OPENAI_API_KEY or ANTHROPIC_API_KEY environment variable",
+                },
             )
 
         # Generate migration
         result = generate_migration_with_ai(
-            prompt=request.prompt,
-            file_type=request.file_type,
-            include_context=request.include_context
+            prompt=request.prompt, file_type=request.file_type, include_context=request.include_context
         )
 
         # Optionally save immediately
@@ -445,9 +429,7 @@ async def generate_migration_ai(request: AIGenerateRequest):
         if request.save_immediately and result.confidence > 0.5:
             try:
                 file_path_obj = create_migration_file(
-                    description=result.description,
-                    content=result.sql,
-                    file_type=request.file_type
+                    description=result.description, content=result.sql, file_type=request.file_type
                 )
                 file_path = str(file_path_obj)
                 saved = True
@@ -463,21 +445,21 @@ async def generate_migration_ai(request: AIGenerateRequest):
             description=result.description,
             reasoning=result.reasoning,
             saved=saved,
-            file_path=file_path
+            file_path=file_path,
         )
 
     except HTTPException:
         raise
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to generate migration: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to generate migration: {str(e)}"
         )
 
 
 # ============================================================================
 # Compliance Endpoints
 # ============================================================================
+
 
 @app.get("/api/compliance/report", response_model=ComplianceReportResponse, tags=["Compliance"])
 async def get_compliance_report():
@@ -489,12 +471,7 @@ async def get_compliance_report():
         report = check_compliance(verbose=False)
 
         violations = [
-            ComplianceViolationResponse(
-                severity=v.severity,
-                category=v.category,
-                message=v.message,
-                details=v.details
-            )
+            ComplianceViolationResponse(severity=v.severity, category=v.category, message=v.message, details=v.details)
             for v in report.violations
         ]
 
@@ -503,13 +480,12 @@ async def get_compliance_report():
             timestamp=report.timestamp,
             violation_count=report.violation_count,
             violations=violations,
-            recommendations=report.recommendations
+            recommendations=report.recommendations,
         )
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to check compliance: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to check compliance: {str(e)}"
         )
 
 
@@ -520,19 +496,13 @@ async def get_violations():
         report = check_compliance(verbose=False)
 
         return [
-            ComplianceViolationResponse(
-                severity=v.severity,
-                category=v.category,
-                message=v.message,
-                details=v.details
-            )
+            ComplianceViolationResponse(severity=v.severity, category=v.category, message=v.message, details=v.details)
             for v in report.violations
         ]
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get violations: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to get violations: {str(e)}"
         )
 
 
@@ -547,12 +517,7 @@ async def validate_compliance():
         report = checker.check_compliance()
 
         violations = [
-            ComplianceViolationResponse(
-                severity=v.severity,
-                category=v.category,
-                message=v.message,
-                details=v.details
-            )
+            ComplianceViolationResponse(severity=v.severity, category=v.category, message=v.message, details=v.details)
             for v in report.violations
         ]
 
@@ -561,21 +526,17 @@ async def validate_compliance():
             timestamp=report.timestamp,
             violation_count=report.violation_count,
             violations=violations,
-            recommendations=report.recommendations
+            recommendations=report.recommendations,
         )
 
         if not report.is_compliant:
-            return JSONResponse(
-                status_code=status.HTTP_403_FORBIDDEN,
-                content=response.dict()
-            )
+            return JSONResponse(status_code=status.HTTP_403_FORBIDDEN, content=response.dict())
 
         return response
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to validate compliance: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to validate compliance: {str(e)}"
         )
 
 
@@ -590,20 +551,13 @@ async def enforce_compliance():
 
         enforce_migration_compliance(operation="API compliance check")
 
-        return {
-            "status": "compliant",
-            "message": "No compliance violations detected"
-        }
+        return {"status": "compliant", "message": "No compliance violations detected"}
 
     except ComplianceViolationError as e:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=str(e)
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=str(e))
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to enforce compliance: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to enforce compliance: {str(e)}"
         )
 
 
@@ -611,19 +565,16 @@ async def enforce_compliance():
 # Schema Interceptor Endpoints
 # ============================================================================
 
+
 @app.post("/api/interceptor/enable", tags=["Interceptor"])
 async def enable_interceptor():
     """Enable the schema modification interceptor."""
     try:
         enable_schema_interception(strict_mode=True)
-        return {
-            "status": "enabled",
-            "message": "Schema interceptor enabled - DDL statements will be validated"
-        }
+        return {"status": "enabled", "message": "Schema interceptor enabled - DDL statements will be validated"}
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to enable interceptor: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to enable interceptor: {str(e)}"
         )
 
 
@@ -632,20 +583,17 @@ async def disable_interceptor():
     """Disable the schema modification interceptor."""
     try:
         disable_schema_interception()
-        return {
-            "status": "disabled",
-            "message": "Schema interceptor disabled - DDL statements will not be validated"
-        }
+        return {"status": "disabled", "message": "Schema interceptor disabled - DDL statements will not be validated"}
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to disable interceptor: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to disable interceptor: {str(e)}"
         )
 
 
 # ============================================================================
 # Real-time & Streaming Endpoints
 # ============================================================================
+
 
 @app.websocket("/ws")
 async def websocket_endpoint(websocket: WebSocket):
@@ -663,16 +611,18 @@ async def websocket_endpoint(websocket: WebSocket):
             # Keep connection alive and send periodic updates
             state_report = get_migration_state_report()
 
-            await websocket.send_json({
-                "type": "status_update",
-                "data": {
-                    "applied_count": state_report.applied_count,
-                    "pending_count": state_report.pending_count,
-                    "failed_count": state_report.failed_count,
-                    "is_compliant": state_report.is_compliant,
-                    "timestamp": datetime.utcnow().isoformat()
+            await websocket.send_json(
+                {
+                    "type": "status_update",
+                    "data": {
+                        "applied_count": state_report.applied_count,
+                        "pending_count": state_report.pending_count,
+                        "failed_count": state_report.failed_count,
+                        "is_compliant": state_report.is_compliant,
+                        "timestamp": datetime.utcnow().isoformat(),
+                    },
                 }
-            })
+            )
 
             await asyncio.sleep(5)  # Update every 5 seconds
 
@@ -685,6 +635,7 @@ async def stream_migration_logs():
     """
     Server-Sent Events endpoint for streaming migration logs.
     """
+
     async def event_generator():
         while True:
             try:
@@ -695,13 +646,10 @@ async def stream_migration_logs():
                     "timestamp": datetime.utcnow().isoformat(),
                     "applied_count": state_report.applied_count,
                     "pending_count": state_report.pending_count,
-                    "is_compliant": state_report.is_compliant
+                    "is_compliant": state_report.is_compliant,
                 }
 
-                yield {
-                    "event": "status_update",
-                    "data": json.dumps(event_data)
-                }
+                yield {"event": "status_update", "data": json.dumps(event_data)}
 
                 await asyncio.sleep(2)
 
@@ -712,10 +660,7 @@ async def stream_migration_logs():
 
 
 @app.post("/api/migrations/upload", tags=["Migrations"])
-async def upload_migration_file(
-    file: UploadFile = File(...),
-    description: Optional[str] = None
-):
+async def upload_migration_file(file: UploadFile = File(...), description: Optional[str] = None):
     """
     Upload a migration file directly.
 
@@ -724,60 +669,53 @@ async def upload_migration_file(
         description: Optional description (will use filename if not provided)
     """
     try:
-        from pathlib import Path
         import re
+        from pathlib import Path
 
         # Validate file type
-        if not file.filename.endswith(('.sql', '.py')):
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Only .sql and .py files are allowed"
-            )
+        if not file.filename.endswith((".sql", ".py")):
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Only .sql and .py files are allowed")
 
         # Read file content
         content = await file.read()
-        content_str = content.decode('utf-8')
+        content_str = content.decode("utf-8")
 
         # Extract description from filename or use provided
         if not description:
             # Remove extension and timestamp if present
-            desc_match = re.search(r'\d{14}_(.+)\.(sql|py)$', file.filename)
+            desc_match = re.search(r"\d{14}_(.+)\.(sql|py)$", file.filename)
             if desc_match:
                 description = desc_match.group(1)
             else:
                 description = Path(file.filename).stem
 
         # Determine file type
-        file_type = 'py' if file.filename.endswith('.py') else 'sql'
+        file_type = "py" if file.filename.endswith(".py") else "sql"
 
         # Create migration file
-        file_path = create_migration_file(
-            description=description,
-            content=content_str,
-            file_type=file_type
-        )
+        file_path = create_migration_file(description=description, content=content_str, file_type=file_type)
 
         # Extract version from filename
-        match = re.match(r'^(\d{14})_', file_path.name)
+        match = re.match(r"^(\d{14})_", file_path.name)
         version = match.group(1) if match else "unknown"
 
         return CreateMigrationResponse(
             version=version,
             filename=file_path.name,
             file_path=str(file_path),
-            message="Migration file uploaded successfully"
+            message="Migration file uploaded successfully",
         )
 
     except Exception as e:
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to upload migration: {str(e)}"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to upload migration: {str(e)}"
         )
 
 
 # ============================================================================
 # Root Endpoint
 # ============================================================================
+
 
 @app.get("/", tags=["Root"])
 async def root():
@@ -793,14 +731,15 @@ async def root():
             "migrations": "/api/migrations/*",
             "compliance": "/api/compliance/*",
             "websocket": "/ws",
-            "streaming": "/api/stream/*"
-        }
+            "streaming": "/api/stream/*",
+        },
     }
 
 
 # ============================================================================
 # Application Startup
 # ============================================================================
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -833,10 +772,4 @@ async def shutdown_event():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(
-        "api:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    uvicorn.run("api:app", host="0.0.0.0", port=8000, reload=True, log_level="info")

@@ -1,4 +1,3 @@
-
 import time
 import traceback
 from pathlib import Path
@@ -8,18 +7,19 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
 from .database import get_engine
-from .migration_loader import MigrationFile, scan_migration_files, get_migration_by_version
+from .migration_loader import MigrationFile, get_migration_by_version, scan_migration_files
 from .migration_state import (
-    get_pending_migrations,
-    record_migration_success,
-    record_migration_failure,
+    PendingMigration,
     delete_migration_record,
-    PendingMigration
+    get_pending_migrations,
+    record_migration_failure,
+    record_migration_success,
 )
 
 
 class MigrationExecutionError(Exception):
     """Custom exception for migration execution errors."""
+
     pass
 
 
@@ -61,7 +61,7 @@ class MigrationExecutor:
 
         for i, statement in enumerate(statements):
             statement = statement.strip()
-            if not statement or statement.startswith('--'):
+            if not statement or statement.startswith("--"):
                 continue
 
             self._log(f"  Statement {i + 1}/{len(statements)}: {statement[:100]}...")
@@ -89,22 +89,18 @@ class MigrationExecutor:
 
         # Import and execute the Python migration
         import importlib.util
-        spec = importlib.util.spec_from_file_location(
-            f"migration_{migration.version}",
-            migration.file_path
-        )
+
+        spec = importlib.util.spec_from_file_location(f"migration_{migration.version}", migration.file_path)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
         # Call the up() function if it exists
-        if hasattr(module, 'up'):
+        if hasattr(module, "up"):
             if not self.dry_run:
                 module.up(connection)
             self._log("  Executed up() function")
         else:
-            raise MigrationExecutionError(
-                f"Python migration {migration.file_path.name} missing 'up()' function"
-            )
+            raise MigrationExecutionError(f"Python migration {migration.file_path.name} missing 'up()' function")
 
         return None  # Python migrations manage their own rollback
 
@@ -122,23 +118,23 @@ class MigrationExecutor:
         statements = []
         current_statement = []
 
-        for line in sql.split('\n'):
+        for line in sql.split("\n"):
             stripped = line.strip()
 
             # Skip empty lines and comments
-            if not stripped or stripped.startswith('--'):
+            if not stripped or stripped.startswith("--"):
                 continue
 
             current_statement.append(line)
 
             # Check if statement ends with semicolon
-            if stripped.endswith(';'):
-                statements.append('\n'.join(current_statement))
+            if stripped.endswith(";"):
+                statements.append("\n".join(current_statement))
                 current_statement = []
 
         # Add remaining statement if any
         if current_statement:
-            statements.append('\n'.join(current_statement))
+            statements.append("\n".join(current_statement))
 
         return statements
 
@@ -156,13 +152,14 @@ class MigrationExecutor:
         sql_upper = sql.upper()
 
         # Extract table names from CREATE TABLE statements
-        if 'CREATE TABLE' in sql_upper:
+        if "CREATE TABLE" in sql_upper:
             # Simple regex to find table names (not production-ready)
             import re
-            matches = re.findall(r'CREATE TABLE\s+(?:IF NOT EXISTS\s+)?([a-zA-Z0-9_]+)', sql, re.IGNORECASE)
+
+            matches = re.findall(r"CREATE TABLE\s+(?:IF NOT EXISTS\s+)?([a-zA-Z0-9_]+)", sql, re.IGNORECASE)
             if matches:
                 rollback_statements = [f"DROP TABLE IF EXISTS {table};" for table in matches]
-                return '\n'.join(rollback_statements)
+                return "\n".join(rollback_statements)
 
         return None
 
@@ -189,9 +186,9 @@ class MigrationExecutor:
                     self._log(f"Starting migration: {migration.version} - {migration.description}")
 
                     # Execute based on file type
-                    if migration.file_type == 'sql':
+                    if migration.file_type == "sql":
                         rollback_sql = self._execute_sql_migration(migration, connection)
-                    elif migration.file_type == 'py':
+                    elif migration.file_type == "py":
                         rollback_sql = self._execute_python_migration(migration, connection)
                     else:
                         raise MigrationExecutionError(f"Unknown migration type: {migration.file_type}")
@@ -205,7 +202,7 @@ class MigrationExecutor:
                             description=migration.description,
                             checksum=migration.checksum,
                             execution_time=execution_time,
-                            rollback_sql=rollback_sql
+                            rollback_sql=rollback_sql,
                         )
 
                     self._log(f"Migration completed in {execution_time:.2f}s")
@@ -225,7 +222,7 @@ class MigrationExecutor:
                         description=migration.description,
                         checksum=migration.checksum,
                         execution_time=execution_time,
-                        error_message=error_message
+                        error_message=error_message,
                     )
                 except Exception as record_error:
                     self._log(f"Failed to record migration failure: {record_error}")

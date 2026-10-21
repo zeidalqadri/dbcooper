@@ -1,7 +1,7 @@
-
-import os
 import json
-from typing import Optional, Dict, Any
+import os
+from typing import Any, Dict, Optional
+
 from anthropic import Anthropic
 
 from .base import AIProvider, GeneratedMigration
@@ -42,10 +42,7 @@ Return JSON with: sql, rollback_sql, confidence (0-1), warnings (array), suggest
         return user_prompt
 
     def generate_migration(
-        self,
-        prompt: str,
-        context: Optional[Dict[str, Any]] = None,
-        file_type: str = "sql"
+        self, prompt: str, context: Optional[Dict[str, Any]] = None, file_type: str = "sql"
     ) -> GeneratedMigration:
         """Generate migration using Claude"""
 
@@ -61,10 +58,7 @@ Return JSON with: sql, rollback_sql, confidence (0-1), warnings (array), suggest
                 model=self.model,
                 max_tokens=2000,
                 temperature=0.1,
-                messages=[{
-                    "role": "user",
-                    "content": self._build_prompt(prompt, context)
-                }]
+                messages=[{"role": "user", "content": self._build_prompt(prompt, context)}],
             )
 
             # Parse response
@@ -85,7 +79,7 @@ Return JSON with: sql, rollback_sql, confidence (0-1), warnings (array), suggest
                 warnings=result.get("warnings", []),
                 suggestions=result.get("suggestions", []),
                 description=result.get("description", prompt),
-                reasoning=result.get("reasoning")
+                reasoning=result.get("reasoning"),
             )
 
         except Exception as e:
@@ -95,5 +89,5 @@ Return JSON with: sql, rollback_sql, confidence (0-1), warnings (array), suggest
                 confidence=0.0,
                 warnings=[f"AI generation failed: {str(e)}"],
                 suggestions=["Please write migration manually", "Check API key configuration"],
-                description=f"Failed: {prompt}"
+                description=f"Failed: {prompt}",
             )

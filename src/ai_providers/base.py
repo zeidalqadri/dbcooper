@@ -1,12 +1,12 @@
-
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, List, Dict, Any
+from typing import Any, Dict, List, Optional
 
 
 @dataclass
 class GeneratedMigration:
     """Result of AI migration generation"""
+
     sql: str
     rollback_sql: Optional[str]
     confidence: float  # 0.0 to 1.0
@@ -21,10 +21,7 @@ class AIProvider(ABC):
 
     @abstractmethod
     def generate_migration(
-        self,
-        prompt: str,
-        context: Optional[Dict[str, Any]] = None,
-        file_type: str = "sql"
+        self, prompt: str, context: Optional[Dict[str, Any]] = None, file_type: str = "sql"
     ) -> GeneratedMigration:
         """
         Generate a migration from natural language prompt.
